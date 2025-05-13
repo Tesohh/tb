@@ -1,9 +1,10 @@
 use std::{
     collections::HashMap,
+    fmt::Display,
     sync::{Arc, RwLock, Weak},
 };
 
-use anyhow::anyhow;
+use anyhow::{anyhow, bail};
 
 #[derive(Debug)]
 pub enum NodeType {
@@ -38,11 +39,27 @@ impl Node {
     }
 }
 
+impl Display for Node {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.node_type {
+            NodeType::Text(text) => write!(f, "\"{}\"", text.chars().take(24).collect::<String>()),
+            NodeType::Comment(comment) => write!(
+                f,
+                "<!-- {} -->",
+                comment.chars().take(24).collect::<String>()
+            ),
+            NodeType::Element(element_data) => write!(f, "{}", element_data.tag),
+        }
+    }
+}
+
 pub trait SharedNodeExt {
     fn append_node(&self, node: Node) -> anyhow::Result<SharedNode>;
     fn append_element(&self, tag: &str, attrs: Option<AttrMap>) -> anyhow::Result<SharedNode>;
     fn append_text(&self, text: &str) -> anyhow::Result<SharedNode>;
     fn append_comment(&self, text: &str) -> anyhow::Result<SharedNode>;
+
+    fn pretty_print_tree(&self, depth: usize) -> anyhow::Result<()>;
 }
 
 impl SharedNodeExt for SharedNode {
@@ -79,6 +96,22 @@ impl SharedNodeExt for SharedNode {
     fn append_comment(&self, text: &str) -> anyhow::Result<SharedNode> {
         let node = Node::new(NodeType::Comment(text.into()));
         self.append_node(node)
+    }
+
+    fn pretty_print_tree(&self, depth: usize) -> anyhow::Result<()> {
+        let indent = (0..depth).map(|_| "   ").collect::<String>();
+        let node = match self.read() {
+            Ok(v) => v,
+            Err(e) => bail!("{}", e),
+        };
+
+        println!("{}{}", indent, node);
+
+        for child in node.children.iter() {
+            child.pretty_print_tree(depth + 1)?;
+        }
+
+        Ok(())
     }
 }
 
