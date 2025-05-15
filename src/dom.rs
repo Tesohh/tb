@@ -7,6 +7,25 @@ use std::{
 use anyhow::{anyhow, bail};
 
 #[derive(Debug)]
+pub struct Dom {
+    pub doctype: String,
+    pub root: SharedNode,
+}
+
+impl Dom {
+    pub fn new(doctype: &str) -> Self {
+        Dom {
+            doctype: String::from(doctype),
+            root: Node::new(NodeType::Element(ElementData {
+                tag: "root".into(),
+                attrs: HashMap::new(),
+            }))
+            .to_shared(),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub enum NodeType {
     Text(String),
     Comment(String),
@@ -55,6 +74,7 @@ impl Display for Node {
 
 pub trait SharedNodeExt {
     fn append_node(&self, node: Node) -> anyhow::Result<SharedNode>;
+    fn append_shared_node(&self, node: SharedNode) -> anyhow::Result<SharedNode>;
     fn append_element(&self, tag: &str, attrs: Option<AttrMap>) -> anyhow::Result<SharedNode>;
     fn append_text(&self, text: &str) -> anyhow::Result<SharedNode>;
     fn append_comment(&self, text: &str) -> anyhow::Result<SharedNode>;
@@ -74,6 +94,25 @@ impl SharedNodeExt for SharedNode {
                 let shared = node.to_shared();
                 w.children.push(shared.clone());
                 Ok(shared)
+            }
+            Err(_) => Err(anyhow!("poison error while appending new node!!")),
+        }
+    }
+
+    fn append_shared_node(&self, node: SharedNode) -> anyhow::Result<SharedNode> {
+        let weak = Arc::downgrade(&self.clone());
+        match node.write() {
+            Ok(mut w) => {
+                w.parent = Some(weak);
+            }
+            Err(_) => bail!("poison error while appending new node!!"),
+        }
+
+        let w = self.write();
+        match w {
+            Ok(mut w) => {
+                w.children.push(node.clone());
+                Ok(node)
             }
             Err(_) => Err(anyhow!("poison error while appending new node!!")),
         }

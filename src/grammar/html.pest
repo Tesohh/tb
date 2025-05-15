@@ -53,8 +53,9 @@ normal_element_close = _{
     "</" ~ POP ~ ">"
 }
 
+// TODO: add unquoted attrs
 attr            = _{ attr_with_value | attr_empty }
-attr_empty      =  { tag_name }
+attr_empty      = @{ tag_name }
 attr_with_value =  {
     tag_name ~ "=" ~ attr_value
 }

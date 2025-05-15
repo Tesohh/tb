@@ -1,0 +1,16 @@
+use crate::dom;
+use pest::Parser;
+use pest_derive::Parser;
+
+#[derive(Parser)]
+#[grammar = "grammar/html.pest"]
+struct HtmlParser;
+
+pub fn parse_from_str(html: &str) -> Result<dom::Dom, pest::error::Error<Rule>> {
+    let tokens = HtmlParser::parse(Rule::html, html)?;
+
+    let mut dom = dom::Dom {
+        doctype: todo!(),
+        root: todo!(),
+    };
+}
