@@ -1,0 +1,65 @@
+//! Parses an HTML document
+WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+COMMENT    = _{ "<!--" ~ (!"-->" ~ !("--" ~ ANY) ~ ANY)* ~ "-->" }
+
+html = _{
+    SOI ~ doctype? ~ node* ~ EOI
+}
+
+doctype = {
+    ^"<!doctype " ~ tag_name ~ ">"
+}
+
+node = _{
+    element
+  | text
+}
+
+element = {
+    void_element
+  | normal_element
+}
+// void element
+void_tag_name = @{
+    ^"area"
+  | ^"base"
+  | ^"br"
+  | ^"col"
+  | ^"command"
+  | ^"embed"
+  | ^"hr"
+  | ^"img"
+  | ^"input"
+  | ^"keygen"
+  | ^"link"
+  | ^"meta"
+  | ^"param"
+  | ^"source"
+  | ^"track"
+  | ^"wbr"
+}
+void_element  = _{
+    "<" ~ void_tag_name ~ attr* ~ (">" | "/>")
+}
+
+// normal elemnets
+normal_element       = _{
+    normal_element_open ~ (!normal_element_close ~ node*) ~ normal_element_close
+}
+normal_element_open  = _{
+    "<" ~ PUSH(tag_name) ~ attr* ~ ">"
+}
+normal_element_close = _{
+    "</" ~ POP ~ ">"
+}
+
+attr            = _{ attr_with_value | attr_empty }
+attr_empty      =  { tag_name }
+attr_with_value =  {
+    tag_name ~ "=" ~ attr_value
+}
+attr_value      =  { "\"" ~ (!"\"" ~ ANY)* ~ "\"" | "'" ~ (!"'" ~ ANY)* ~ "'" }
+
+// text
+text     =  { (!"<" ~ ANY)+ }
+tag_name = @{ ASCII_ALPHA ~ (ASCII_ALPHANUMERIC | "-" | "_")* }
