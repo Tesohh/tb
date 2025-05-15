@@ -44,7 +44,7 @@ void_element  = _{
 
 // normal elemnets
 normal_element       = _{
-    normal_element_open ~ (!normal_element_close ~ node*) ~ normal_element_close
+    normal_element_open ~ (!normal_element_close ~ node)* ~ normal_element_close
 }
 normal_element_open  = _{
     "<" ~ PUSH(tag_name) ~ attr* ~ ">"

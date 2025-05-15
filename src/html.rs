@@ -38,16 +38,34 @@ fn parse_node(pair: Pair<Rule>) -> SharedNode {
         Rule::element => {
             let mut inner = pair.into_inner();
 
-            let node = Node::new(NodeType::Element(ElementData::new(
+            let mut node = Node::new(NodeType::Element(ElementData::new(
                 inner.next().unwrap().as_str(),
-                Some(HashMap::new()), // TODO: Parse attrs
+                Some(HashMap::new()),
             )))
             .to_shared();
 
             for child in inner {
-                let _ = match child.as_rule() {
-                    Rule::element => node.append_shared_node(parse_node(child)),
-                    Rule::text => node.append_text(child.as_str()),
+                match child.as_rule() {
+                    Rule::element => {
+                        node.append_shared_node(parse_node(child));
+                    }
+                    Rule::attr_empty => {
+                        node.set_attr(child.as_str(), "");
+                    }
+                    Rule::attr_with_value => {
+                        let mut child_inner = child.into_inner();
+                        node.set_attr(
+                            child_inner.next().unwrap().as_str(),
+                            child_inner
+                                .next()
+                                .unwrap()
+                                .as_str()
+                                .trim_matches(['\'', '"']),
+                        );
+                    }
+                    Rule::text => {
+                        node.append_text(child.as_str());
+                    }
                     _ => unreachable!(),
                 };
             }

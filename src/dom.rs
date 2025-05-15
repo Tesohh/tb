@@ -79,6 +79,9 @@ pub trait SharedNodeExt {
     fn append_text(&self, text: &str) -> anyhow::Result<SharedNode>;
     fn append_comment(&self, text: &str) -> anyhow::Result<SharedNode>;
 
+    fn set_attr(&self, key: &str, value: &str);
+    fn get_attr(&self, key: &str) -> Option<String>;
+
     fn pretty_print_tree(&self, depth: usize) -> anyhow::Result<()>;
 }
 
@@ -135,6 +138,30 @@ impl SharedNodeExt for SharedNode {
     fn append_comment(&self, text: &str) -> anyhow::Result<SharedNode> {
         let node = Node::new(NodeType::Comment(text.into()));
         self.append_node(node)
+    }
+
+    fn set_attr(&self, key: &str, value: &str) {
+        let mut w = self.write().unwrap();
+        match &mut w.node_type {
+            NodeType::Element(element_data) => {
+                element_data
+                    .attrs
+                    .entry(String::from(key))
+                    .and_modify(|v| *v = String::from(value))
+                    .or_insert(String::from(value));
+            }
+            NodeType::Text(_) => unreachable!("text nodes cannot have attributes"),
+            NodeType::Comment(_) => unreachable!("comment nodes cannot have attributes"),
+        }
+    }
+
+    fn get_attr(&self, key: &str) -> Option<String> {
+        let r = self.read().unwrap();
+        match &r.node_type {
+            NodeType::Element(element_data) => element_data.attrs.get(key).cloned(),
+            NodeType::Text(_) => unreachable!("text nodes cannot have attributes"),
+            NodeType::Comment(_) => unreachable!("comment nodes cannot have attributes"),
+        }
     }
 
     fn pretty_print_tree(&self, depth: usize) -> anyhow::Result<()> {
