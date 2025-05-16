@@ -26,13 +26,13 @@ pub type Specificity = (usize, usize, usize);
 
 #[derive(Debug)]
 pub struct Selector {
-    pub simples: Vec<SimpleSelector>,
+    pub inner: Vec<CompoundSelector>,
     pub combinators: Vec<Combinator>,
 }
 
 impl Selector {
     pub fn specificity(&self) -> Specificity {
-        self.simples
+        self.inner
             .iter()
             .map(|s| s.specificity())
             .fold((0, 0, 0), |r, v| (r.0 + v.0, r.1 + v.1, r.2 + v.2))
@@ -40,13 +40,13 @@ impl Selector {
 }
 
 #[derive(Debug)]
-pub struct SimpleSelector {
+pub struct CompoundSelector {
     pub id: Option<String>,
     pub tag_name: Option<String>,
     pub classes: Vec<String>,
 }
 
-impl SimpleSelector {
+impl CompoundSelector {
     pub fn specificity(&self) -> Specificity {
         let a = self.id.iter().count();
         let b = self.classes.len();

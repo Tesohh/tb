@@ -1,2 +1,39 @@
-WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
-COMMENT    = _{ "/*" ~ (!"*/" ~ !("" ~ ANY) ~ ANY)* ~ "*/" }
+WHITESPACE = _{ " " | "\t" | newline }
+newline    = _{ "\n" | "\r" | "\r\n" }
+COMMENT    = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+
+stylesheet = _{ qualified_rule* }
+
+qualified_rule = { complex_selector ~ declaration_block }
+
+declaration_block = { "{" ~ declaration_list ~ "}" }
+declaration_list  = {
+    declaration ~ (";" ~ declaration)* ~ ";"?
+}
+declaration       = { ident ~ ":" ~ value }
+
+complex_selector  = { compound_selector ~ (combinator ~ compound_selector)* }
+compound_selector = { simple_selector+ }
+
+simple_selector = _{ id_selector | tag_selector | class_selector | global_selector }
+global_selector =  { "*" }
+id_selector     =  { "#" ~ ident }
+tag_selector    =  { ident }
+class_selector  =  { "." ~ ident }
+
+combinator = { " " | "+" | ">" | "~" }
+
+escape =  { "\\" ~ ((!newline ~ !HEX_DIGIT ~ ANY) | HEX_DIGIT{1, 6}) }
+ident  = @{ ("--" | ("-"? ~ (escape | safe_char_not_digit))) ~ (safe_char | escape)* }
+
+safe_char_not_digit =  { ASCII_ALPHA | "_" }
+safe_char           = @{ ASCII_ALPHANUMERIC | "_" }
+
+number = @{
+    ("-" | "+")? ~ ("0" | ASCII_NONZERO_DIGIT ~ ASCII_DIGIT*) ~ ("." ~ ASCII_DIGIT*)? ~ (^"e" ~ ("+" | "-")? ~ ASCII_DIGIT+)?
+}
+
+dimension    = { number ~ (ident | percent_sign)? }
+percent_sign = { "%" }
+value        = { dimension }
+// TODO: add more values
