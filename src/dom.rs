@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::{anyhow, bail};
+use owo_colors::OwoColorize;
 
 #[derive(Debug)]
 pub struct Dom {
@@ -61,13 +62,23 @@ impl Node {
 impl Display for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.node_type {
-            NodeType::Text(text) => write!(f, "\"{}\"", text.chars().take(24).collect::<String>()),
+            NodeType::Text(text) => write!(
+                f,
+                "{}",
+                format!("\"{}\"", text.chars().take(24).collect::<String>()).yellow()
+            ),
             NodeType::Comment(comment) => write!(
                 f,
                 "<!-- {} -->",
                 comment.chars().take(24).collect::<String>()
             ),
-            NodeType::Element(element_data) => write!(f, "{}", element_data.tag),
+            NodeType::Element(element_data) => {
+                write!(f, "{}", element_data.tag.green())?;
+                for (k, v) in &element_data.attrs {
+                    write!(f, " {}{}{}", k.dimmed(), "=".bright_black(), v.yellow())?;
+                }
+                Ok(())
+            }
         }
     }
 }
