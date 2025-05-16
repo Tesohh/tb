@@ -38,19 +38,20 @@ fn parse_node(pair: Pair<Rule>) -> SharedNode {
         Rule::element => {
             let mut inner = pair.into_inner();
 
-            let mut node = Node::new(NodeType::Element(ElementData::new(
+            let node = Node::new(NodeType::Element(ElementData::new(
                 inner.next().unwrap().as_str(),
                 Some(HashMap::new()),
             )))
             .to_shared();
 
+            // unwraps are to crash on poison error
             for child in inner {
                 match child.as_rule() {
                     Rule::element => {
-                        node.append_shared_node(parse_node(child));
+                        node.append_shared_node(parse_node(child)).unwrap();
                     }
                     Rule::attr_empty => {
-                        node.set_attr(child.as_str(), "");
+                        node.set_attr(child.as_str(), "").unwrap();
                     }
                     Rule::attr_with_value => {
                         let mut child_inner = child.into_inner();
@@ -61,10 +62,11 @@ fn parse_node(pair: Pair<Rule>) -> SharedNode {
                                 .unwrap()
                                 .as_str()
                                 .trim_matches(['\'', '"']),
-                        );
+                        )
+                        .unwrap();
                     }
                     Rule::text => {
-                        node.append_text(child.as_str());
+                        node.append_text(child.as_str()).unwrap();
                     }
                     _ => unreachable!(),
                 };

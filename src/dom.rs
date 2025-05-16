@@ -90,8 +90,8 @@ pub trait SharedNodeExt {
     fn append_text(&self, text: &str) -> anyhow::Result<SharedNode>;
     fn append_comment(&self, text: &str) -> anyhow::Result<SharedNode>;
 
-    fn set_attr(&self, key: &str, value: &str);
-    fn get_attr(&self, key: &str) -> Option<String>;
+    fn set_attr(&self, key: &str, value: &str) -> anyhow::Result<()>;
+    fn get_attr(&self, key: &str) -> anyhow::Result<Option<String>>;
 
     fn pretty_print_tree(&self, depth: usize) -> anyhow::Result<()>;
 }
@@ -151,8 +151,11 @@ impl SharedNodeExt for SharedNode {
         self.append_node(node)
     }
 
-    fn set_attr(&self, key: &str, value: &str) {
-        let mut w = self.write().unwrap();
+    fn set_attr(&self, key: &str, value: &str) -> anyhow::Result<()> {
+        let mut w = match self.write() {
+            Ok(v) => v,
+            Err(e) => bail!("{}", e),
+        };
         match &mut w.node_type {
             NodeType::Element(element_data) => {
                 element_data
@@ -160,16 +163,20 @@ impl SharedNodeExt for SharedNode {
                     .entry(String::from(key))
                     .and_modify(|v| *v = String::from(value))
                     .or_insert(String::from(value));
+                Ok(())
             }
             NodeType::Text(_) => unreachable!("text nodes cannot have attributes"),
             NodeType::Comment(_) => unreachable!("comment nodes cannot have attributes"),
         }
     }
 
-    fn get_attr(&self, key: &str) -> Option<String> {
-        let r = self.read().unwrap();
+    fn get_attr(&self, key: &str) -> anyhow::Result<Option<String>> {
+        let r = match self.read() {
+            Ok(v) => v,
+            Err(e) => bail!("{}", e),
+        };
         match &r.node_type {
-            NodeType::Element(element_data) => element_data.attrs.get(key).cloned(),
+            NodeType::Element(element_data) => Ok(element_data.attrs.get(key).cloned()),
             NodeType::Text(_) => unreachable!("text nodes cannot have attributes"),
             NodeType::Comment(_) => unreachable!("comment nodes cannot have attributes"),
         }
