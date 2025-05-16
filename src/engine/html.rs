@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::dom::{self, ElementData, Node, NodeType, SharedNode, SharedNodeExt};
+use crate::engine::dom::{self, ElementData, Node, NodeType, SharedNode, SharedNodeExt};
 use pest::{iterators::Pair, Parser};
 use pest_derive::Parser;
 
