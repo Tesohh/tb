@@ -10,7 +10,7 @@ declaration_block = { "{" ~ declaration_list ~ "}" }
 declaration_list  = {
     declaration ~ (";" ~ declaration)* ~ ";"?
 }
-declaration       = { ident ~ ":" ~ value }
+declaration       = { ident ~ ":" ~ value* }
 
 complex_selector  = { compound_selector ~ (combinator ~ compound_selector)* }
 compound_selector = { simple_selector+ }
