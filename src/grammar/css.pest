@@ -6,11 +6,11 @@ stylesheet = _{ SOI ~ qualified_rule* ~ EOI }
 
 qualified_rule = { complex_selector ~ declaration_block }
 
-declaration_block = { "{" ~ declaration_list? ~ "}" }
-declaration_list  = {
-    declaration ~ (";" ~ declaration)* ~ ";"?
+declaration_block = _{ "{" ~ declaration_list ~ "}" }
+declaration_list  =  {
+    (declaration ~ (";" ~ declaration)* ~ ";"?)?
 }
-declaration       = { ident ~ ":" ~ value* }
+declaration       =  { ident ~ ":" ~ value* }
 
 complex_selector  = { compound_selector ~ (combinator ~ compound_selector)* }
 compound_selector = { simple_selector+ }
