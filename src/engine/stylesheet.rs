@@ -18,7 +18,7 @@ impl Stylesheet {
 
 #[derive(Debug)]
 pub struct Rule {
-    pub selectors: Vec<Selector>,
+    pub selector: Selector,
     pub declarations: HashMap<String, Value>,
 }
 
@@ -102,6 +102,29 @@ pub enum Unit {
     Percent, // relative to parent value,
     #[strum(serialize = "")]
     Unitless, // unitless. eg. `opacity`
+    Invalid,
+}
+
+impl From<&str> for Unit {
+    fn from(value: &str) -> Self {
+        let value = value.to_lowercase();
+        match value.as_str() {
+            "px" => Unit::Px,
+            "pt" => Unit::Pt,
+            "q" => Unit::Q,
+            "mm" => Unit::Mm,
+            "pc" => Unit::Pc,
+            "in" => Unit::In,
+            "em" => Unit::Em,
+            "rem" => Unit::Rem,
+            "vh" => Unit::Vh,
+            "vw" => Unit::Vw,
+            "tb" => Unit::Tb,
+            "%" => Unit::Percent,
+            "" => Unit::Unitless,
+            _ => Unit::Invalid,
+        }
+    }
 }
 
 #[derive(Debug)]

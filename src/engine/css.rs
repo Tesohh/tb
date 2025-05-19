@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use pest::{iterators::Pair, Parser as _};
 use pest_derive::Parser;
 
-use super::stylesheet::{self, Stylesheet};
+use super::stylesheet::{self, Dimension, Stylesheet};
 
 #[derive(Parser)]
 #[grammar = "grammar/css.pest"]
@@ -11,9 +11,9 @@ struct CssParser;
 
 #[allow(clippy::result_large_err)]
 pub fn parse_from_str(css: &str) -> Result<stylesheet::Stylesheet, pest::error::Error<Rule>> {
-    let mut pairs = CssParser::parse(Rule::stylesheet, css)?;
+    let pairs = CssParser::parse(Rule::stylesheet, css)?;
 
-    let sheet = Stylesheet::new(None);
+    let mut sheet = Stylesheet::new(None);
 
     for pair in pairs {
         let qualified_rule = match pair.as_rule() {
@@ -21,26 +21,35 @@ pub fn parse_from_str(css: &str) -> Result<stylesheet::Stylesheet, pest::error::
             Rule::EOI => break,
             _ => unreachable!(),
         };
+
+        sheet.rules.push(qualified_rule);
     }
 
     Ok(sheet)
 }
 
-fn parse_qualified_rule(pair: Pair<Rule>) -> stylesheet::Rule {
+pub fn parse_qualified_rule(pair: Pair<Rule>) -> stylesheet::Rule {
     let mut inner = pair.into_inner();
     let selector = inner.next().unwrap();
     let selector = parse_selector(selector);
 
     let declarations = inner.next().unwrap();
+    let mut decl_map = HashMap::new();
+    for declaration in declarations.into_inner() {
+        let decls = parse_declaration(declaration);
+        dbg!(&decls);
+        for (key, value) in decls {
+            decl_map.insert(key, value);
+        }
+    }
 
-    // TEMP:
     stylesheet::Rule {
-        selectors: vec![],
-        declarations: HashMap::new(),
+        selector,
+        declarations: decl_map,
     }
 }
 
-fn parse_selector(pair: Pair<Rule>) -> stylesheet::Selector {
+pub fn parse_selector(pair: Pair<Rule>) -> stylesheet::Selector {
     let mut selector = stylesheet::Selector {
         compounds: vec![],
         combinators: vec![],
@@ -49,9 +58,9 @@ fn parse_selector(pair: Pair<Rule>) -> stylesheet::Selector {
     for compound_or_combinator in pair.into_inner() {
         match compound_or_combinator.as_rule() {
             Rule::compound_selector => {
-                let mut compound = stylesheet::CompoundSelector { 
-                    id: None, 
-                    tag_name: None, 
+                let mut compound = stylesheet::CompoundSelector {
+                    id: None,
+                    tag_name: None,
                     classes: vec![],
                     global: false,
                 };
@@ -81,6 +90,34 @@ fn parse_selector(pair: Pair<Rule>) -> stylesheet::Selector {
         }
     }
 
-    dbg!(&selector);
     selector
+}
+
+pub fn parse_declaration(pair: Pair<Rule>) -> Vec<(String, stylesheet::Value)> {
+    let mut inner = pair.into_inner();
+    let key = inner.next().unwrap().as_str().to_string();
+    let mut decls = vec![];
+
+    // TEMP:
+    let value = inner.next().unwrap();
+    let mut value_inner = value.into_inner();
+
+    let inner_next = value_inner.next().unwrap();
+
+    // TEMP: move to separate function
+    let value = match inner_next.as_rule() {
+        Rule::ident => stylesheet::Value::Keyword(inner_next.as_str().to_string()),
+        Rule::dimension => {
+            let mut dimension_inner = inner_next.into_inner();
+            stylesheet::Value::Dimension(Dimension {
+                value: dimension_inner.next().unwrap().as_str().parse().unwrap(),
+                unit: stylesheet::Unit::from(dimension_inner.next().unwrap().as_str()),
+            })
+        }
+        _ => unreachable!(),
+    };
+
+    decls.push((key, value));
+
+    decls
 }
