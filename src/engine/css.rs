@@ -37,7 +37,6 @@ pub fn parse_qualified_rule(pair: Pair<Rule>) -> stylesheet::Rule {
     let mut decl_map = HashMap::new();
     for declaration in declarations.into_inner() {
         let decls = parse_declaration(declaration);
-        dbg!(&decls);
         for (key, value) in decls {
             decl_map.insert(key, value);
         }
@@ -98,26 +97,30 @@ pub fn parse_declaration(pair: Pair<Rule>) -> Vec<(String, stylesheet::Value)> {
     let key = inner.next().unwrap().as_str().to_string();
     let mut decls = vec![];
 
-    // TEMP:
-    let value = inner.next().unwrap();
-    let mut value_inner = value.into_inner();
+    // TEMP: should support multi value syntax
+    let value = parse_value(inner.next().unwrap());
 
-    let inner_next = value_inner.next().unwrap();
+    decls.push((key, value));
 
-    // TEMP: move to separate function
-    let value = match inner_next.as_rule() {
-        Rule::ident => stylesheet::Value::Keyword(inner_next.as_str().to_string()),
+    decls
+}
+
+pub fn parse_value(value: Pair<Rule>) -> stylesheet::Value {
+    if !matches!(value.as_rule(), Rule::value) {
+        unreachable!("bad developer should not have passed a non Rule::value to parse_value!!");
+    }
+
+    let inner = value.into_inner().next().unwrap();
+
+    match inner.as_rule() {
+        Rule::ident => stylesheet::Value::Keyword(inner.as_str().to_string()),
         Rule::dimension => {
-            let mut dimension_inner = inner_next.into_inner();
+            let mut dimension_inner = inner.into_inner();
             stylesheet::Value::Dimension(Dimension {
                 value: dimension_inner.next().unwrap().as_str().parse().unwrap(),
                 unit: stylesheet::Unit::from(dimension_inner.next().unwrap().as_str()),
             })
         }
         _ => unreachable!(),
-    };
-
-    decls.push((key, value));
-
-    decls
+    }
 }
