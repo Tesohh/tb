@@ -35,5 +35,5 @@ number = @{
 
 dimension    = { number ~ (ident | percent_sign)? }
 percent_sign = { "%" }
-value        = { dimension }
+value        = { dimension | ident }
 // TODO: add more values
