@@ -96,6 +96,7 @@ pub enum Unit {
     Rem, // relative to font size of root
     Vh,  // relative to viewport height
     Vw,  // relative to viewport width
+    Tb,  // tb unit == 1 cell (not standard CSS)
     #[strum(serialize = "%")]
     Percent, // relative to parent value,
     #[strum(serialize = "")]

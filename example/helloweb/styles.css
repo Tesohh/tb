@@ -1,0 +1,13 @@
+#title {
+    color: red;
+}
+
+.lorem-blue {
+    color: blue;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+#second-paragraph>* {
+    color: green;
+}

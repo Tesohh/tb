@@ -1,13 +1,10 @@
-use pest_derive::Parser;
-use tb::engine::dom::SharedNodeExt;
+use std::fs;
 
-#[derive(Parser)]
-#[grammar = "grammar/css.pest"]
-struct CssParser;
+use tb::engine::css;
 
 fn main() -> anyhow::Result<()> {
-    let parsed = tb::engine::html::parse_from_str(
-        "<div><head></head><span class='bold'><span>asdasd</span></span></div>",
-    )?;
-    parsed.root.pretty_print_tree(0)
+    let input = fs::read_to_string("example/helloweb/styles.css")?;
+    let parsed = css::parse_from_str(&input)?;
+    dbg!(parsed);
+    Ok(())
 }

@@ -2,11 +2,11 @@ WHITESPACE = _{ " " | "\t" | newline }
 newline    = _{ "\n" | "\r" | "\r\n" }
 COMMENT    = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
 
-stylesheet = _{ qualified_rule* }
+stylesheet = _{ SOI ~ qualified_rule* ~ EOI }
 
 qualified_rule = { complex_selector ~ declaration_block }
 
-declaration_block = { "{" ~ declaration_list ~ "}" }
+declaration_block = { "{" ~ declaration_list? ~ "}" }
 declaration_list  = {
     declaration ~ (";" ~ declaration)* ~ ";"?
 }
