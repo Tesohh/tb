@@ -1,8 +1,9 @@
+use std::fs;
+
 use tb::engine::dom::SharedNodeExt;
 
 fn main() -> anyhow::Result<()> {
-    let parsed = tb::engine::html::parse_from_str(
-        "<div><head></head><span class='bold'><span>asdasd</span></span></div>",
-    )?;
+    let input = fs::read_to_string("example/helloweb/index.html")?;
+    let parsed = tb::engine::html::parse_from_str(&input)?;
     parsed.root.pretty_print_tree(0)
 }

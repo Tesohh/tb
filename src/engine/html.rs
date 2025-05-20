@@ -37,9 +37,10 @@ fn parse_node(pair: Pair<Rule>) -> SharedNode {
     match pair.as_rule() {
         Rule::element => {
             let mut inner = pair.into_inner();
+            let tag_or_style = inner.next().unwrap();
 
             let node = Node::new(NodeType::Element(ElementData::new(
-                inner.next().unwrap().as_str(),
+                tag_or_style.as_str(),
                 Some(HashMap::new()),
             )))
             .to_shared();
