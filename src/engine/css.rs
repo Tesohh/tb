@@ -7,7 +7,7 @@ use super::stylesheet::{self, Dimension, Stylesheet};
 
 #[derive(Parser)]
 #[grammar = "grammar/css.pest"]
-struct CssParser;
+pub struct CssParser;
 
 #[allow(clippy::result_large_err)]
 pub fn parse_from_str(css: &str) -> Result<stylesheet::Stylesheet, pest::error::Error<Rule>> {

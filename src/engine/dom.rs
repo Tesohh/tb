@@ -1,11 +1,16 @@
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fmt::Display,
     sync::{Arc, RwLock, Weak},
 };
 
 use anyhow::{anyhow, bail};
 use owo_colors::OwoColorize;
+use pest::Parser;
+
+use crate::engine::css;
+
+use super::stylesheet;
 
 #[derive(Debug)]
 pub struct Dom {
@@ -23,6 +28,16 @@ impl Dom {
             }))
             .to_shared(),
         }
+    }
+
+    pub fn query_select(&self, query: &str) -> anyhow::Result<Vec<Node>> {
+        let mut pairs = css::CssParser::parse(css::Rule::complex_selector, query)?;
+        let selector = css::parse_selector(pairs.next().unwrap());
+        self.select(selector)
+    }
+
+    pub fn select(&self, selector: stylesheet::Selector) -> anyhow::Result<Vec<Node>> {
+        Ok(vec![])
     }
 }
 
@@ -214,4 +229,18 @@ impl ElementData {
             attrs: attrs.unwrap_or_default(),
         }
     }
+
+    pub fn id(&self) -> Option<&String> {
+        self.attrs.get("id")
+    }
+
+    pub fn classes(&self) -> HashSet<&str> {
+        match self.attrs.get("class") {
+            Some(classes) => classes.split(" ").collect(),
+            None => HashSet::new(),
+        }
+    }
+
+    // TODO:
+    pub fn matches_compound_selector(&self, selector: &stylesheet::CompoundSelector) {}
 }
