@@ -63,6 +63,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "hashmap_macro"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8a181d5ff5b742b5a830beb8c172562e6f22dccba6e1308bbacaba9fda84c8d"
+
+[[package]]
 name = "heck"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -207,6 +213,7 @@ name = "tb"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "hashmap_macro",
  "owo-colors",
  "pest",
  "pest_derive",

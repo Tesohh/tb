@@ -6,11 +6,8 @@ use std::{
 
 use anyhow::{anyhow, bail};
 use owo_colors::OwoColorize;
-use pest::Parser;
 
-use crate::engine::css;
-
-use super::stylesheet;
+use super::stylesheet::{self, Selector};
 
 #[derive(Debug)]
 pub struct Dom {
@@ -30,13 +27,12 @@ impl Dom {
         }
     }
 
+    // TODO: copy into SharedNode and alias it here
     pub fn query_select(&self, query: &str) -> anyhow::Result<Vec<Node>> {
-        let mut pairs = css::CssParser::parse(css::Rule::complex_selector, query)?;
-        let selector = css::parse_selector(pairs.next().unwrap());
-        self.select(selector)
+        self.select(Selector::from(query)?)
     }
 
-    pub fn select(&self, selector: stylesheet::Selector) -> anyhow::Result<Vec<Node>> {
+    pub fn select(&self, _selector: stylesheet::Selector) -> anyhow::Result<Vec<Node>> {
         Ok(vec![])
     }
 }
@@ -241,6 +237,60 @@ impl ElementData {
         }
     }
 
-    // TODO:
-    pub fn matches_compound_selector(&self, selector: &stylesheet::CompoundSelector) {}
+    pub fn matches_compound_selector(&self, selector: &stylesheet::CompoundSelector) -> bool {
+        let id_ok = selector.id.is_none() || selector.id.as_ref() == self.id();
+        let tag_ok = selector.tag_name.is_none() || selector.tag_name.as_ref() == Some(&self.tag);
+
+        let my_classes = self.classes(); // small optimization
+        let classes_ok = selector
+            .classes
+            .iter()
+            .all(|class| my_classes.contains(class.as_str()));
+
+        id_ok && tag_ok && classes_ok
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::engine::stylesheet::CompoundSelector;
+    use hashmap_macro::hashmap;
+
+    fn selector_helper(input: &str) -> CompoundSelector {
+        Selector::from(input).unwrap().compounds[0].clone()
+    }
+
+    #[test]
+    fn compound_selector_matching() {
+        let element = ElementData {
+            tag: "h1".into(),
+            attrs: hashmap! { "class".into() => "yellow red pink".into(), "id".into() => "ooo".into() },
+        };
+
+        let matches = [
+            "*",
+            "h1",
+            "#ooo",
+            "h1#ooo",
+            ".yellow",
+            "h1.yellow",
+            "*.yellow",
+            "*.yellow.pink",
+            "*.yellow.pink.red",
+            "*.yellow.pink.red.pink.pink",
+        ];
+        let not_matches = [
+            "h1.yellow#iowjefoijweijf",
+            "h2.yellow",
+            "pink.red.yellow.blue",
+        ];
+
+        for x in matches {
+            assert!(element.matches_compound_selector(&selector_helper(x)));
+        }
+        for x in not_matches {
+            assert!(!element.matches_compound_selector(&selector_helper(x)));
+        }
+    }
 }

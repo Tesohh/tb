@@ -61,12 +61,11 @@ pub fn parse_selector(pair: Pair<Rule>) -> stylesheet::Selector {
                     id: None,
                     tag_name: None,
                     classes: vec![],
-                    global: false,
                 };
 
                 for selector in compound_or_combinator.into_inner() {
                     match selector.as_rule() {
-                        Rule::global_selector => compound.global = true,
+                        Rule::global_selector => {},
                         Rule::id_selector => compound.id = Some(String::from(selector.into_inner().as_str())),
                         Rule::tag_selector => compound.tag_name = Some(String::from(selector.into_inner().as_str())),
                         Rule::class_selector => compound.classes.push(String::from(selector.into_inner().as_str())),

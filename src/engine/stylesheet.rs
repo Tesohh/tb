@@ -1,7 +1,11 @@
 use std::{collections::HashMap, fmt::Display};
 
+use anyhow::bail;
 use owo_colors::OwoColorize;
+use pest::Parser as _;
 use strum_macros::Display;
+
+use super::css::{self};
 
 #[derive(Debug)]
 pub struct Stylesheet {
@@ -31,6 +35,14 @@ pub struct Selector {
 }
 
 impl Selector {
+    pub fn from(input: &str) -> anyhow::Result<Self> {
+        let mut pairs = css::CssParser::parse(css::Rule::complex_selector, input)?;
+        let pair = match pairs.next() {
+            Some(v) => v,
+            None => bail!("invalid selector passed to Selector::from"),
+        };
+        Ok(css::parse_selector(pair))
+    }
     pub fn specificity(&self) -> Specificity {
         self.compounds
             .iter()
@@ -39,12 +51,11 @@ impl Selector {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CompoundSelector {
     pub id: Option<String>,
     pub tag_name: Option<String>,
     pub classes: Vec<String>,
-    pub global: bool,
 }
 
 impl CompoundSelector {

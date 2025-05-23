@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-use tb::dom::{self, SharedNodeExt};
+use tb::engine::dom::{self, SharedNodeExt};
 
 fn main() -> Result<()> {
     let html = dom::Node::new(dom::NodeType::Element(dom::ElementData {
