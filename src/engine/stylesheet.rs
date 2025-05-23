@@ -22,19 +22,19 @@ impl Stylesheet {
 
 #[derive(Debug)]
 pub struct Rule {
-    pub selector: Selector,
+    pub selector: ComplexSelector,
     pub declarations: HashMap<String, Value>,
 }
 
 pub type Specificity = (usize, usize, usize);
 
 #[derive(Debug)]
-pub struct Selector {
-    pub compounds: Vec<CompoundSelector>,
+pub struct ComplexSelector {
+    pub inner: Vec<Selector>,
     pub combinators: Vec<Combinator>,
 }
 
-impl Selector {
+impl ComplexSelector {
     pub fn from(input: &str) -> anyhow::Result<Self> {
         let mut pairs = css::CssParser::parse(css::Rule::complex_selector, input)?;
         let pair = match pairs.next() {
@@ -44,7 +44,7 @@ impl Selector {
         Ok(css::parse_selector(pair))
     }
     pub fn specificity(&self) -> Specificity {
-        self.compounds
+        self.inner
             .iter()
             .map(|s| s.specificity())
             .fold((0, 0, 0), |r, v| (r.0 + v.0, r.1 + v.1, r.2 + v.2))
@@ -52,13 +52,13 @@ impl Selector {
 }
 
 #[derive(Debug, Clone)]
-pub struct CompoundSelector {
+pub struct Selector {
     pub id: Option<String>,
     pub tag_name: Option<String>,
     pub classes: Vec<String>,
 }
 
-impl CompoundSelector {
+impl Selector {
     pub fn specificity(&self) -> Specificity {
         let a = self.id.iter().count();
         let b = self.classes.len();

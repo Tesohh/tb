@@ -48,16 +48,16 @@ pub fn parse_qualified_rule(pair: Pair<Rule>) -> stylesheet::Rule {
     }
 }
 
-pub fn parse_selector(pair: Pair<Rule>) -> stylesheet::Selector {
-    let mut selector = stylesheet::Selector {
-        compounds: vec![],
+pub fn parse_selector(pair: Pair<Rule>) -> stylesheet::ComplexSelector {
+    let mut selector = stylesheet::ComplexSelector {
+        inner: vec![],
         combinators: vec![],
     };
 
     for compound_or_combinator in pair.into_inner() {
         match compound_or_combinator.as_rule() {
             Rule::compound_selector => {
-                let mut compound = stylesheet::CompoundSelector {
+                let mut compound = stylesheet::Selector {
                     id: None,
                     tag_name: None,
                     classes: vec![],
@@ -73,7 +73,7 @@ pub fn parse_selector(pair: Pair<Rule>) -> stylesheet::Selector {
                     }
                 }
 
-                selector.compounds.push(compound);
+                selector.inner.push(compound);
             },
             Rule::combinator => {
                 match compound_or_combinator.as_str() {
