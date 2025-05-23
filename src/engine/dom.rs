@@ -27,13 +27,15 @@ impl Dom {
         }
     }
 
-    // TODO: copy into SharedNode and alias it here
-    pub fn query_select(&self, query: &str) -> anyhow::Result<Vec<Node>> {
-        self.select(ComplexSelector::from(query)?)
+    pub fn query_select(&self, query: &str) -> anyhow::Result<Vec<SharedNode>> {
+        self.root.select(ComplexSelector::from(query)?)
     }
 
-    pub fn select(&self, _selector: stylesheet::ComplexSelector) -> anyhow::Result<Vec<Node>> {
-        Ok(vec![])
+    pub fn select(
+        &self,
+        _selector: stylesheet::ComplexSelector,
+    ) -> anyhow::Result<Vec<SharedNode>> {
+        self.root.select(_selector)
     }
 }
 
@@ -105,6 +107,13 @@ pub trait SharedNodeExt {
     fn get_attr(&self, key: &str) -> anyhow::Result<Option<String>>;
 
     fn pretty_print_tree(&self, depth: usize) -> anyhow::Result<()>;
+
+    fn query_select(&self, query: &str) -> anyhow::Result<Vec<SharedNode>>;
+    fn select(&self, _selector: stylesheet::ComplexSelector) -> anyhow::Result<Vec<SharedNode>>;
+    fn select_no_recursive(
+        &self,
+        _selector: stylesheet::ComplexSelector,
+    ) -> anyhow::Result<Vec<SharedNode>>;
 }
 
 impl SharedNodeExt for SharedNode {
@@ -207,6 +216,21 @@ impl SharedNodeExt for SharedNode {
         }
 
         Ok(())
+    }
+
+    fn query_select(&self, query: &str) -> anyhow::Result<Vec<SharedNode>> {
+        self.select(ComplexSelector::from(query)?)
+    }
+
+    fn select(&self, _selector: stylesheet::ComplexSelector) -> anyhow::Result<Vec<SharedNode>> {
+        Ok(vec![])
+    }
+
+    fn select_no_recursive(
+        &self,
+        _selector: stylesheet::ComplexSelector,
+    ) -> anyhow::Result<Vec<SharedNode>> {
+        Ok(vec![])
     }
 }
 
