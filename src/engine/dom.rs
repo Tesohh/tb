@@ -226,14 +226,20 @@ impl SharedNodeExt for SharedNode {
         let self_lock = self.read().unwrap();
         let mut candidates = vec![];
 
-        // for selector in selector.inner {
-        let simple = selector.inner[0].clone(); // TEMP:
-        for child in self_lock.children.iter() {
-            let child_lock = child.read().unwrap();
+        // TODO: for tidiness purposes, make a second trait for all select helpers
+        // for example, this would be a recursive selection
+        // so that it can be reused later for the descendant combinator
 
+        // for selector in selector.inner { // TEMP:
+        let simple = selector.inner[0].clone(); // TEMP:
+
+        for child in self_lock.children.iter() {
+            let child_lock = child.read().unwrap(); // unwrap on poison
+
+            // if it isnt an element, we don't even want to match it, so completely ignore it
             if let NodeType::Element(element) = &child_lock.node_type {
                 if element.matches_selector(&simple) {
-                    candidates.push(child.clone());
+                    candidates.push(Arc::clone(child));
                 }
 
                 candidates.extend(child.select(selector)?);
