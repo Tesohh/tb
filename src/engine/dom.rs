@@ -28,14 +28,14 @@ impl Dom {
     }
 
     pub fn query_select(&self, query: &str) -> anyhow::Result<Vec<SharedNode>> {
-        self.root.select(ComplexSelector::from(query)?)
+        self.root.select(&ComplexSelector::from(query)?)
     }
 
     pub fn select(
         &self,
-        _selector: stylesheet::ComplexSelector,
+        selector: &stylesheet::ComplexSelector,
     ) -> anyhow::Result<Vec<SharedNode>> {
-        self.root.select(_selector)
+        self.root.select(selector)
     }
 }
 
@@ -109,10 +109,10 @@ pub trait SharedNodeExt {
     fn pretty_print_tree(&self, depth: usize) -> anyhow::Result<()>;
 
     fn query_select(&self, query: &str) -> anyhow::Result<Vec<SharedNode>>;
-    fn select(&self, _selector: stylesheet::ComplexSelector) -> anyhow::Result<Vec<SharedNode>>;
+    fn select(&self, _selector: &stylesheet::ComplexSelector) -> anyhow::Result<Vec<SharedNode>>;
     fn select_no_recursive(
         &self,
-        _selector: stylesheet::ComplexSelector,
+        _selector: &stylesheet::ComplexSelector,
     ) -> anyhow::Result<Vec<SharedNode>>;
 }
 
@@ -219,16 +219,34 @@ impl SharedNodeExt for SharedNode {
     }
 
     fn query_select(&self, query: &str) -> anyhow::Result<Vec<SharedNode>> {
-        self.select(ComplexSelector::from(query)?)
+        self.select(&ComplexSelector::from(query)?)
     }
 
-    fn select(&self, _selector: stylesheet::ComplexSelector) -> anyhow::Result<Vec<SharedNode>> {
-        Ok(vec![])
+    fn select(&self, selector: &stylesheet::ComplexSelector) -> anyhow::Result<Vec<SharedNode>> {
+        let self_lock = self.read().unwrap();
+        let mut candidates = vec![];
+
+        // for selector in selector.inner {
+        let simple = selector.inner[0].clone(); // TEMP:
+        for child in self_lock.children.iter() {
+            let child_lock = child.read().unwrap();
+
+            if let NodeType::Element(element) = &child_lock.node_type {
+                if element.matches_selector(&simple) {
+                    candidates.push(child.clone());
+                }
+
+                candidates.extend(child.select(selector)?);
+            }
+        }
+        // }
+
+        Ok(candidates)
     }
 
     fn select_no_recursive(
         &self,
-        _selector: stylesheet::ComplexSelector,
+        _selector: &stylesheet::ComplexSelector,
     ) -> anyhow::Result<Vec<SharedNode>> {
         Ok(vec![])
     }
