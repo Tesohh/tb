@@ -43,7 +43,7 @@ fn parse_node(pair: Pair<Rule>) -> SharedNode {
                 tag_or_style.as_str(),
                 Some(HashMap::new()),
             )))
-            .to_shared();
+            .into_shared();
 
             // unwraps are to crash on poison error
             for child in inner {
@@ -75,7 +75,7 @@ fn parse_node(pair: Pair<Rule>) -> SharedNode {
 
             node
         }
-        Rule::text => Node::new(NodeType::Text(String::from(pair.as_str()))).to_shared(),
+        Rule::text => Node::new(NodeType::Text(String::from(pair.as_str()))).into_shared(),
 
         _ => unreachable!(),
     }

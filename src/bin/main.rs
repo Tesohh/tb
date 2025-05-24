@@ -8,7 +8,7 @@ fn main() -> Result<()> {
         tag: "html".into(),
         attrs: HashMap::new(),
     }))
-    .to_shared();
+    .into_shared();
 
     let head = html.append_element("head", None)?;
     let title = head.append_element("title", None)?;

@@ -1,100 +1,13 @@
-use std::{
-    collections::{HashMap, HashSet},
-    fmt::Display,
-    sync::{Arc, RwLock, Weak},
-};
+use std::sync::{Arc, RwLock, Weak};
 
 use anyhow::{anyhow, bail};
-use owo_colors::OwoColorize;
 
-use super::stylesheet::{self, ComplexSelector};
+use crate::engine::stylesheet::{self, ComplexSelector};
 
-#[derive(Debug)]
-pub struct Dom {
-    pub doctype: String,
-    pub root: SharedNode,
-}
-
-impl Dom {
-    pub fn new(doctype: &str) -> Self {
-        Dom {
-            doctype: String::from(doctype),
-            root: Node::new(NodeType::Element(ElementData {
-                tag: "root".into(),
-                attrs: HashMap::new(),
-            }))
-            .to_shared(),
-        }
-    }
-
-    pub fn query_select(&self, query: &str) -> anyhow::Result<Vec<SharedNode>> {
-        self.root.select(&ComplexSelector::from(query)?)
-    }
-
-    pub fn select(
-        &self,
-        selector: &stylesheet::ComplexSelector,
-    ) -> anyhow::Result<Vec<SharedNode>> {
-        self.root.select(selector)
-    }
-}
-
-#[derive(Debug)]
-pub enum NodeType {
-    Text(String),
-    Comment(String),
-    Element(ElementData),
-}
-
-#[derive(Debug)]
-pub struct Node {
-    node_type: NodeType,
-    parent: Option<WeakSharedNode>,
-    children: Vec<SharedNode>,
-}
+use super::{AttrMap, ElementData, Node, NodeType};
 
 pub type SharedNode = Arc<RwLock<Node>>;
 pub type WeakSharedNode = Weak<RwLock<Node>>;
-
-impl Node {
-    /// creates a new, orphaned, childless Node
-    pub fn new(node_type: NodeType) -> Self {
-        Self {
-            node_type,
-            parent: None,
-            children: Vec::new(),
-        }
-    }
-
-    /// consumes the node and moves it into a Arc<RwLock<Node>> (aka SharedNode)
-    pub fn to_shared(self) -> SharedNode {
-        Arc::new(RwLock::new(self))
-    }
-}
-
-impl Display for Node {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.node_type {
-            NodeType::Text(text) => write!(
-                f,
-                "{}",
-                format!("\"{}\"", text.chars().take(24).collect::<String>()).yellow()
-            ),
-            NodeType::Comment(comment) => write!(
-                f,
-                "<!-- {} -->",
-                comment.chars().take(24).collect::<String>()
-            ),
-            NodeType::Element(element_data) => {
-                write!(f, "{}", element_data.tag.green())?;
-                for (k, v) in &element_data.attrs {
-                    write!(f, " {}{}{}", k.dimmed(), "=".bright_black(), v.yellow())?;
-                }
-                Ok(())
-            }
-        }
-    }
-}
 
 pub trait SharedNodeExt {
     fn append_node(&self, node: Node) -> anyhow::Result<SharedNode>;
@@ -125,7 +38,7 @@ impl SharedNodeExt for SharedNode {
         let w = self.write();
         match w {
             Ok(mut w) => {
-                let shared = node.to_shared();
+                let shared = node.into_shared();
                 w.children.push(shared.clone());
                 Ok(shared)
             }
@@ -255,90 +168,5 @@ impl SharedNodeExt for SharedNode {
         _selector: &stylesheet::ComplexSelector,
     ) -> anyhow::Result<Vec<SharedNode>> {
         Ok(vec![])
-    }
-}
-
-pub type AttrMap = HashMap<String, String>;
-
-#[derive(Debug)]
-pub struct ElementData {
-    pub tag: String,
-    pub attrs: AttrMap,
-}
-
-impl ElementData {
-    pub fn new(tag: &str, attrs: Option<AttrMap>) -> Self {
-        Self {
-            tag: tag.into(),
-            attrs: attrs.unwrap_or_default(),
-        }
-    }
-
-    pub fn id(&self) -> Option<&String> {
-        self.attrs.get("id")
-    }
-
-    pub fn classes(&self) -> HashSet<&str> {
-        match self.attrs.get("class") {
-            Some(classes) => classes.split(" ").collect(),
-            None => HashSet::new(),
-        }
-    }
-
-    pub fn matches_selector(&self, selector: &stylesheet::Selector) -> bool {
-        let id_ok = selector.id.is_none() || selector.id.as_ref() == self.id();
-        let tag_ok = selector.tag_name.is_none() || selector.tag_name.as_ref() == Some(&self.tag);
-
-        let my_classes = self.classes(); // small optimization
-        let classes_ok = selector
-            .classes
-            .iter()
-            .all(|class| my_classes.contains(class.as_str()));
-
-        id_ok && tag_ok && classes_ok
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::engine::stylesheet::Selector;
-    use hashmap_macro::hashmap;
-
-    fn selector_helper(input: &str) -> Selector {
-        ComplexSelector::from(input).unwrap().inner[0].clone()
-    }
-
-    #[test]
-    fn selector_matching() {
-        let element = ElementData {
-            tag: "h1".into(),
-            attrs: hashmap! { "class".into() => "yellow red pink".into(), "id".into() => "ooo".into() },
-        };
-
-        let matches = [
-            "*",
-            "h1",
-            "#ooo",
-            "h1#ooo",
-            ".yellow",
-            "h1.yellow",
-            "*.yellow",
-            "*.yellow.pink",
-            "*.yellow.pink.red",
-            "*.yellow.pink.red.pink.pink",
-        ];
-        let not_matches = [
-            "h1.yellow#iowjefoijweijf",
-            "h2.yellow",
-            "pink.red.yellow.blue",
-        ];
-
-        for x in matches {
-            assert!(element.matches_selector(&selector_helper(x)));
-        }
-        for x in not_matches {
-            assert!(!element.matches_selector(&selector_helper(x)));
-        }
     }
 }
