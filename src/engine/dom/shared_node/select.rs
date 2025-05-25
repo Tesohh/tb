@@ -186,3 +186,32 @@ impl SelectHelper for SharedNode {
         Ok(candidates)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use std::fs;
+
+    #[test]
+    fn test_selectors() {
+        let input = fs::read_to_string("samples/helloweb/index.html").unwrap();
+        let dom = crate::engine::html::parse_from_str(&input).unwrap();
+
+        let basic_class = dom.query_select(".yellow").unwrap().len();
+        assert_eq!(basic_class, 1);
+
+        let child_paragraphs = dom.query_select("body>p").unwrap().len();
+        assert_eq!(child_paragraphs, 1);
+
+        let div_child_paragraphs = dom.query_select("body>div>p").unwrap().len();
+        assert_eq!(div_child_paragraphs, 2);
+
+        let body_para_descendants = dom.query_select("body p").unwrap().len();
+        assert_eq!(
+            body_para_descendants,
+            child_paragraphs + div_child_paragraphs
+        );
+
+        assert_eq!(dom.query_select("h1 ~ div").unwrap().len(), 2);
+        assert_eq!(dom.query_select("h1 + div").unwrap().len(), 1);
+    }
+}
