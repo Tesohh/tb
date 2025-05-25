@@ -34,36 +34,19 @@ impl Select for SharedNode {
             let simple = selectors.next().context(
                 "selector has more combinators than inner selectors (should be unreachable)",
             )?;
-            match combinator {
-                stylesheet::Combinator::Descendant => {
-                    let mut new_candidates = vec![];
-                    for node in candidates {
-                        new_candidates.extend(node.select_simple_recursive(simple)?);
-                    }
-                    candidates = new_candidates;
-                }
-                stylesheet::Combinator::Child => {
-                    let mut new_candidates = vec![];
-                    for node in candidates {
-                        new_candidates.extend(node.select_simple_no_recursive(simple)?);
-                    }
-                    candidates = new_candidates;
-                }
-                stylesheet::Combinator::AdjacentSibling => {
-                    let mut new_candidates = vec![];
-                    for node in candidates {
-                        new_candidates.extend(node.select_simple_only_next(simple)?);
-                    }
-                    candidates = new_candidates;
-                }
-                stylesheet::Combinator::GeneralSibling => {
-                    let mut new_candidates = vec![];
-                    for node in candidates {
-                        new_candidates.extend(node.select_simple_all_next(simple)?);
-                    }
-                    candidates = new_candidates;
-                }
+
+            let algo = match combinator {
+                stylesheet::Combinator::Descendant => SharedNode::select_simple_recursive,
+                stylesheet::Combinator::Child => SharedNode::select_simple_no_recursive,
+                stylesheet::Combinator::AdjacentSibling => SharedNode::select_simple_only_next,
+                stylesheet::Combinator::GeneralSibling => SharedNode::select_simple_all_next,
+            };
+
+            let mut new_candidates = vec![];
+            for node in candidates {
+                new_candidates.extend(algo(&node, simple)?);
             }
+            candidates = new_candidates;
         }
 
         Ok(candidates)
