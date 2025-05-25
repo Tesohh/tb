@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use anyhow::{bail, Context};
+
 use crate::engine::{
     dom::NodeType,
     stylesheet::{self, ComplexSelector},
@@ -19,11 +21,38 @@ impl Select for SharedNode {
 
     fn select(&self, selector: &stylesheet::ComplexSelector) -> anyhow::Result<Vec<SharedNode>> {
         let _self_lock = self.read().unwrap();
-        let mut candidates = vec![];
 
-        // for selector in selector.inner { // TEMP:
-        let simple = &selector.inner[0]; // TEMP:
-        candidates.extend(self.select_simple_recursive(simple)?);
+        // first pass
+        let mut selectors = selector.inner.iter();
+        let simple = selectors
+            .next()
+            .context("selector's inner simple selector list is empty (should be unreachable)")?;
+        let mut candidates = self.select_simple_recursive(simple)?;
+
+        // go through combinators
+        for combinator in &selector.combinators {
+            let simple = selectors.next().context(
+                "selector has more combinators than inner selectors (should be unreachable)",
+            )?;
+            match combinator {
+                stylesheet::Combinator::Descendant => {
+                    let mut new_candidates = vec![];
+                    for node in candidates {
+                        new_candidates.extend(node.select_simple_recursive(simple)?);
+                    }
+                    candidates = new_candidates;
+                }
+                stylesheet::Combinator::Child => {
+                    let mut new_candidates = vec![];
+                    for node in candidates {
+                        new_candidates.extend(node.select_simple_no_recursive(simple)?);
+                    }
+                    candidates = new_candidates;
+                }
+                stylesheet::Combinator::AdjacentSibling => todo!(),
+                stylesheet::Combinator::GeneralSibling => todo!(),
+            }
+        }
 
         Ok(candidates)
     }
