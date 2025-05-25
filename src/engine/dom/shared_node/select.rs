@@ -42,11 +42,13 @@ impl Select for SharedNode {
                 stylesheet::Combinator::GeneralSibling => SharedNode::select_simple_all_next,
             };
 
-            let mut new_candidates = vec![];
-            for node in candidates {
-                new_candidates.extend(algo(&node, simple)?);
-            }
-            candidates = new_candidates;
+            candidates = candidates
+                .into_iter()
+                .map(|node| algo(&node, simple))
+                .collect::<anyhow::Result<Vec<_>>>()?
+                .into_iter()
+                .flatten()
+                .collect();
         }
 
         Ok(candidates)
