@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use anyhow::{bail, Context};
+use anyhow::Context;
 
 use crate::engine::{
     dom::NodeType,
@@ -49,8 +49,20 @@ impl Select for SharedNode {
                     }
                     candidates = new_candidates;
                 }
-                stylesheet::Combinator::AdjacentSibling => todo!(),
-                stylesheet::Combinator::GeneralSibling => todo!(),
+                stylesheet::Combinator::AdjacentSibling => {
+                    let mut new_candidates = vec![];
+                    for node in candidates {
+                        new_candidates.extend(node.select_simple_only_next(simple)?);
+                    }
+                    candidates = new_candidates;
+                }
+                stylesheet::Combinator::GeneralSibling => {
+                    let mut new_candidates = vec![];
+                    for node in candidates {
+                        new_candidates.extend(node.select_simple_all_next(simple)?);
+                    }
+                    candidates = new_candidates;
+                }
             }
         }
 
@@ -64,6 +76,14 @@ trait SelectHelper {
         simple: &stylesheet::Selector,
     ) -> anyhow::Result<Vec<SharedNode>>;
     fn select_simple_no_recursive(
+        &self,
+        simple: &stylesheet::Selector,
+    ) -> anyhow::Result<Vec<SharedNode>>;
+    fn select_simple_all_next(
+        &self,
+        simple: &stylesheet::Selector,
+    ) -> anyhow::Result<Vec<SharedNode>>;
+    fn select_simple_only_next(
         &self,
         simple: &stylesheet::Selector,
     ) -> anyhow::Result<Vec<SharedNode>>;
@@ -100,15 +120,84 @@ impl SelectHelper for SharedNode {
         let mut candidates = vec![];
 
         for child in self_lock.children.iter() {
-            let child_lock = child.read().unwrap(); // unwrap on poison
+            let child_lock = child.read().unwrap();
 
-            // if it isnt an element, we don't even want to match it, so completely ignore it
             if let NodeType::Element(element) = &child_lock.node_type {
                 if element.matches_selector(simple) {
                     candidates.push(Arc::clone(child));
                 }
             }
         }
+        Ok(candidates)
+    }
+
+    fn select_simple_all_next(
+        &self,
+        simple: &stylesheet::Selector,
+    ) -> anyhow::Result<Vec<SharedNode>> {
+        let self_lock = self.read().unwrap();
+
+        let parent = self_lock
+            .parent
+            .as_ref()
+            .context("cannot check siblings of node with no parent (likely root)")?
+            .upgrade()
+            .context("parent does not exist")?;
+
+        let parent_lock = parent.read().unwrap();
+        // find my position on my parent
+        let index = parent_lock
+            .children
+            .iter()
+            .position(|child| Arc::ptr_eq(child, self))
+            .context("somehow, node was not found in it's parent's children")?;
+
+        // then start the iterator from there
+        let mut candidates = vec![];
+        for sibling in parent_lock.children.iter().skip(index + 1) {
+            let sibling_lock = sibling.read().unwrap();
+            if let NodeType::Element(element) = &sibling_lock.node_type {
+                if element.matches_selector(simple) {
+                    candidates.push(Arc::clone(sibling));
+                }
+            }
+        }
+
+        Ok(candidates)
+    }
+
+    fn select_simple_only_next(
+        &self,
+        simple: &stylesheet::Selector,
+    ) -> anyhow::Result<Vec<SharedNode>> {
+        let self_lock = self.read().unwrap();
+
+        let parent = self_lock
+            .parent
+            .as_ref()
+            .context("cannot check siblings of node with no parent (likely root)")?
+            .upgrade()
+            .context("parent does not exist")?;
+
+        let parent_lock = parent.read().unwrap();
+        let index = parent_lock
+            .children
+            .iter()
+            .position(|child| Arc::ptr_eq(child, self))
+            .context("somehow, node was not found in it's parent's children")?;
+
+        let sibling = parent_lock.children.get(index + 1).context(
+            "somehow, node's index was found in it's parent's children, but get returned None",
+        )?;
+
+        let mut candidates = vec![];
+        let sibling_lock = sibling.read().unwrap();
+        if let NodeType::Element(element) = &sibling_lock.node_type {
+            if element.matches_selector(simple) {
+                candidates.push(Arc::clone(sibling));
+            }
+        }
+
         Ok(candidates)
     }
 }

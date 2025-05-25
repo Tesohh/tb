@@ -9,5 +9,7 @@ fn main() -> anyhow::Result<()> {
     dbg!(dom.query_select("body p")?.len());
     dbg!(dom.query_select("body>p")?.len());
     dbg!(dom.query_select("body>div>p")?.len());
+    dbg!(dom.query_select("h1 ~ div")?.len());
+    dbg!(dom.query_select("h1 + div")?.len());
     dom.root.pretty_print_tree(0)
 }
