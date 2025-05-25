@@ -1,6 +1,6 @@
 use std::fs;
 
-use tb::engine::dom::SharedNodeExt;
+use tb::engine::dom::PrettyPrintTree as _;
 
 fn main() -> anyhow::Result<()> {
     let input = fs::read_to_string("samples/helloweb/index.html")?;

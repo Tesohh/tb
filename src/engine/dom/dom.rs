@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::engine::stylesheet::{self, ComplexSelector};
 
-use super::{ElementData, Node, NodeType, SharedNode, SharedNodeExt as _};
+use super::{ElementData, Node, NodeType, Select as _, SharedNode};
 
 #[derive(Debug)]
 pub struct Dom {

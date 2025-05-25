@@ -50,8 +50,8 @@ impl Display for Node {
             ),
             NodeType::Comment(comment) => write!(
                 f,
-                "<!-- {} -->",
-                comment.chars().take(24).collect::<String>()
+                "{}",
+                format!("<!-- {} -->", comment.chars().take(24).collect::<String>()).dimmed()
             ),
             NodeType::Element(element_data) => {
                 write!(f, "{}", element_data.tag.green())?;

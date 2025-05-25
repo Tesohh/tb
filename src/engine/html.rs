@@ -1,8 +1,10 @@
 use std::collections::HashMap;
 
-use crate::engine::dom::{self, ElementData, Node, NodeType, SharedNode, SharedNodeExt};
+use crate::engine::dom::{self, ElementData, Node, NodeType, SharedNode};
 use pest::{iterators::Pair, Parser};
 use pest_derive::Parser;
+
+use super::dom::shared_node::{Append as _, GetSetAttr as _};
 
 #[derive(Parser)]
 #[grammar = "grammar/html.pest"]

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::Result;
-use tb::engine::dom::{self, SharedNodeExt};
+use tb::engine::dom::{self, Append as _, PrettyPrintTree as _};
 
 fn main() -> Result<()> {
     let html = dom::Node::new(dom::NodeType::Element(dom::ElementData {
