@@ -20,10 +20,12 @@ impl Stylesheet {
     }
 }
 
+pub type PropMap = HashMap<String, Value>;
+
 #[derive(Debug)]
 pub struct Rule {
     pub selector: ComplexSelector,
-    pub declarations: HashMap<String, Value>,
+    pub props: PropMap,
 }
 
 pub type Specificity = (usize, usize, usize);

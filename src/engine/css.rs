@@ -44,7 +44,7 @@ pub fn parse_qualified_rule(pair: Pair<Rule>) -> stylesheet::Rule {
 
     stylesheet::Rule {
         selector,
-        declarations: decl_map,
+        props: decl_map,
     }
 }
 
@@ -76,8 +76,8 @@ pub fn parse_selector(pair: Pair<Rule>) -> stylesheet::ComplexSelector {
                 selector.inner.push(compound);
             },
             Rule::combinator => {
-                match compound_or_combinator.as_str() {
-                    // TODO: add Space
+                match compound_or_combinator.as_str().trim() {
+                    "" => selector.combinators.push(stylesheet::Combinator::Descendant),
                     ">" => selector.combinators.push(stylesheet::Combinator::Child),
                     "+" => selector.combinators.push(stylesheet::Combinator::AdjacentSibling),
                     "~" => selector.combinators.push(stylesheet::Combinator::GeneralSibling),

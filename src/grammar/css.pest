@@ -12,8 +12,8 @@ declaration_list  =  {
 }
 declaration       =  { ident ~ ":" ~ value* }
 
-complex_selector  = { compound_selector ~ (combinator ~ compound_selector)* }
-compound_selector = { simple_selector+ }
+complex_selector  = ${ compound_selector ~ (combinator ~ compound_selector)* }
+compound_selector =  { simple_selector+ }
 
 simple_selector = _{ id_selector | tag_selector | class_selector | global_selector }
 global_selector =  { "*" }
@@ -21,7 +21,12 @@ id_selector     =  { "#" ~ ident }
 tag_selector    =  { ident }
 class_selector  =  { "." ~ ident }
 
-combinator = { " " | "+" | ">" | "~" }
+combinator = {
+    WHITESPACE* ~ "+" ~ WHITESPACE*
+  | WHITESPACE* ~ ">" ~ WHITESPACE*
+  | WHITESPACE* ~ "~" ~ WHITESPACE*
+  | WHITESPACE+
+}
 
 escape =  { "\\" ~ ((!newline ~ !HEX_DIGIT ~ ANY) | HEX_DIGIT{1, 6}) }
 ident  = @{ ("--" | ("-"? ~ (escape | safe_char_not_digit))) ~ (safe_char | escape | "-")* }
