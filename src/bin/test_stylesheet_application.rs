@@ -1,4 +1,4 @@
-use tb::engine::stylesheet::Origin;
+use tb::engine::{dom::AskStyle, stylesheet::Origin};
 
 fn main() -> anyhow::Result<()> {
     let html_input = String::from(
@@ -15,7 +15,7 @@ fn main() -> anyhow::Result<()> {
             color: red;
         }
 
-        .yellow {
+        p.yellow {
             color: yellow;
         }
     "#,
@@ -27,7 +27,7 @@ fn main() -> anyhow::Result<()> {
             color: blue;
         }
 
-        p.yellow {
+        .yellow {
             color: purple;
         }
     "#,
@@ -40,6 +40,8 @@ fn main() -> anyhow::Result<()> {
 
     dom.apply_stylesheet(sheet_agent)?;
     dom.apply_stylesheet(sheet_author)?;
+
+    dbg!(dom.query_select("p")?[0].ask_style("color")?);
 
     // dbg!(dom.root);
 

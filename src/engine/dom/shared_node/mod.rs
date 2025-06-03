@@ -13,10 +13,13 @@ pub use pretty_print_tree::*;
 pub mod select;
 pub use select::*;
 
+pub mod ask_style;
+pub use ask_style::*;
+
 pub mod iterator;
 
 pub type SharedNode = Arc<RwLock<Node>>;
 pub type WeakSharedNode = Weak<RwLock<Node>>;
 
-pub trait SharedNodeExt: Append + GetSetAttr + PrettyPrintTree + Select {}
+pub trait SharedNodeExt: Append + GetSetAttr + PrettyPrintTree + Select + AskStyle {}
 impl SharedNodeExt for SharedNode {}
