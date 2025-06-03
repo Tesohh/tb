@@ -1,3 +1,5 @@
+use anyhow::Context;
+
 use crate::engine::dom::AppliedStyle;
 
 use super::SharedNode;
@@ -30,11 +32,67 @@ impl AskStyle for SharedNode {
             }
 
             // Cloning AppliedStyle is cheap.. it only contains Rc, enum and Specificity
-            return Ok(filtered.first().map(|s| (*s).clone()));
+            Ok(filtered.first().map(|s| (*s).clone()))
         } else {
             // TODO: ask my parent...
-        }
+            if !INHERITABLE_PROPERTIES.contains(&key) {
+                return Ok(None);
+            }
 
-        Ok(None)
+            let r = self.read().unwrap();
+
+            // if r.Parent is None, this is the root node
+            let Some(ref parent) = r.parent else {
+                return Ok(None);
+            };
+
+            let parent = parent.upgrade().context("parent does not exist")?;
+
+            parent.ask_style(key)
+        }
     }
 }
+
+static INHERITABLE_PROPERTIES: [&str; 41] = [
+    "azimuth",
+    "border-collapse",
+    "border-spacing",
+    "caption-side",
+    "color",
+    "cursor",
+    "direction",
+    "elevation",
+    "empty-cells",
+    "font-family",
+    "font-size",
+    "font-style",
+    "font-variant",
+    "font-weight",
+    "font",
+    "letter-spacing",
+    "line-height",
+    "list-style-image",
+    "list-style-position",
+    "list-style-type",
+    "list-style",
+    "orphans",
+    "pitch-range",
+    "pitch",
+    "quotes",
+    "richness",
+    "speak-header",
+    "speak-numeral",
+    "speak-punctuation",
+    "speak",
+    "speech-rate",
+    "stress",
+    "text-align",
+    "text-indent",
+    "text-transform",
+    "visibility",
+    "voice-family",
+    "volume",
+    "white-space",
+    "widows",
+    "word-spacing",
+];

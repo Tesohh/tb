@@ -6,6 +6,9 @@ fn main() -> anyhow::Result<()> {
         <h1>Cissy</h1>
         <p class="yellow">iojwefijo</p>
         <p style="color: pink">iojwefijo</p>
+        <div style="color: cyan">
+            <span id="spannen"></span>
+        </div>
     "#,
     );
 
@@ -41,7 +44,7 @@ fn main() -> anyhow::Result<()> {
     dom.apply_stylesheet(sheet_agent)?;
     dom.apply_stylesheet(sheet_author)?;
 
-    dbg!(dom.query_select("p")?[0].ask_style("color")?);
+    dbg!(dom.query_select("div>span")?[0].ask_style("color")?);
 
     // dbg!(dom.root);
 
