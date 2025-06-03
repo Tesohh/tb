@@ -3,17 +3,20 @@ use std::{collections::HashMap, str::FromStr};
 use pest::{iterators::Pair, Parser as _};
 use pest_derive::Parser;
 
-use super::stylesheet::{self, Dimension, Stylesheet};
+use super::stylesheet::{self, Dimension, Origin, Stylesheet};
 
 #[derive(Parser)]
 #[grammar = "grammar/css.pest"]
 pub struct CssParser;
 
 #[allow(clippy::result_large_err)]
-pub fn parse_from_str(css: &str) -> Result<stylesheet::Stylesheet, pest::error::Error<Rule>> {
+pub fn parse_from_str(
+    css: &str,
+    origin: Origin,
+) -> Result<stylesheet::Stylesheet, pest::error::Error<Rule>> {
     let pairs = CssParser::parse(Rule::stylesheet, css)?;
 
-    let mut sheet = Stylesheet::new(None);
+    let mut sheet = Stylesheet::new(None, origin);
 
     for pair in pairs {
         let qualified_rule = match pair.as_rule() {

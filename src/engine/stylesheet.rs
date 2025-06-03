@@ -10,14 +10,26 @@ use super::css::{self};
 #[derive(Debug)]
 pub struct Stylesheet {
     pub rules: Vec<Rule>,
+    pub origin: Origin,
 }
 
 impl Stylesheet {
-    pub fn new(rules: Option<Vec<Rule>>) -> Self {
+    pub fn new(rules: Option<Vec<Rule>>, origin: Origin) -> Self {
         Stylesheet {
             rules: rules.unwrap_or_default(),
+            origin,
         }
     }
+}
+
+#[derive(Debug, Display, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
+/// Describes the origin of a stylesheet.
+/// Variants have this logical order: Author > User > Agent
+/// You may also get the "value" manually by using `.. as u8`
+pub enum Origin {
+    Agent,
+    User,
+    Author,
 }
 
 pub type PropMap = HashMap<String, Value>;
@@ -28,7 +40,8 @@ pub struct Rule {
     pub props: PropMap,
 }
 
-pub type Specificity = (usize, usize, usize);
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Specificity(usize, usize, usize);
 
 #[derive(Debug)]
 pub struct ComplexSelector {
@@ -54,7 +67,9 @@ impl ComplexSelector {
         self.inner
             .iter()
             .map(|s| s.specificity())
-            .fold((0, 0, 0), |r, v| (r.0 + v.0, r.1 + v.1, r.2 + v.2))
+            .fold(Specificity(0, 0, 0), |r, v| {
+                Specificity(r.0 + v.0, r.1 + v.1, r.2 + v.2)
+            })
     }
 }
 
@@ -71,7 +86,7 @@ impl Selector {
         let b = self.classes.len();
         let c = self.tag_name.iter().count();
 
-        (a, b, c)
+        Specificity(a, b, c)
     }
 }
 
