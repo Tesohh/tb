@@ -41,7 +41,13 @@ pub fn parse_qualified_rule(pair: Pair<Rule>) -> stylesheet::Rule {
     for declaration in declarations.into_inner() {
         let decls = parse_declaration(declaration);
         for (key, value) in decls {
-            decl_map.insert(Rc::from(key), Rc::from(value));
+            decl_map.insert(
+                Rc::from(key),
+                Rc::from(stylesheet::PropertyValue {
+                    value,
+                    important: false, // TODO: parse the important
+                }),
+            );
         }
     }
 

@@ -8,7 +8,7 @@ use owo_colors::OwoColorize;
 
 use crate::engine::stylesheet;
 
-use super::{SharedNode, WeakSharedNode};
+use super::{AppliedStyle, SharedNode, WeakSharedNode};
 
 #[derive(Debug)]
 pub enum NodeType {
@@ -22,6 +22,8 @@ pub struct Node {
     pub node_type: NodeType,
     pub parent: Option<WeakSharedNode>,
     pub children: Vec<SharedNode>,
+
+    pub applied_styles: Vec<AppliedStyle>,
 }
 
 impl Node {
@@ -31,6 +33,7 @@ impl Node {
             node_type,
             parent: None,
             children: Vec::new(),
+            applied_styles: Vec::new(),
         }
     }
 

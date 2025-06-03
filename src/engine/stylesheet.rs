@@ -32,7 +32,22 @@ pub enum Origin {
     Author,
 }
 
-pub type PropMap = HashMap<Rc<String>, Rc<Value>>;
+impl Origin {
+    pub fn value(&self, important: bool) -> u8 {
+        match important {
+            true => 5 - *self as u8,
+            false => *self as u8,
+        }
+    }
+}
+
+pub type PropMap = HashMap<Rc<String>, Rc<PropertyValue>>;
+
+#[derive(Debug)]
+pub struct PropertyValue {
+    pub value: Value,
+    pub important: bool,
+}
 
 #[derive(Debug)]
 pub struct Rule {
@@ -41,7 +56,12 @@ pub struct Rule {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Specificity(usize, usize, usize);
+/// `(a, b, c, d)`
+/// `a` = 1 if the styles are defined inline
+/// `b` = 1 if id is present
+/// `c` = amount of classes
+/// `d` = 1 if tag is present
+pub struct Specificity(usize, usize, usize, usize);
 
 #[derive(Debug)]
 pub struct ComplexSelector {
@@ -67,8 +87,8 @@ impl ComplexSelector {
         self.inner
             .iter()
             .map(|s| s.specificity())
-            .fold(Specificity(0, 0, 0), |r, v| {
-                Specificity(r.0 + v.0, r.1 + v.1, r.2 + v.2)
+            .fold(Specificity(0, 0, 0, 0), |r, v| {
+                Specificity(0, r.0 + v.0, r.1 + v.1, r.2 + v.2)
             })
     }
 }
@@ -81,12 +101,13 @@ pub struct Selector {
 }
 
 impl Selector {
+    /// TODO: add the inline (a) somehow
     pub fn specificity(&self) -> Specificity {
-        let a = self.id.iter().count();
-        let b = self.classes.len();
-        let c = self.tag_name.iter().count();
+        let b = self.id.iter().count();
+        let c = self.classes.len();
+        let d = self.tag_name.iter().count();
 
-        Specificity(a, b, c)
+        Specificity(0, b, c, d)
     }
 }
 

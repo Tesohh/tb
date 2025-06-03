@@ -1,12 +1,11 @@
 use std::rc::Rc;
 
-use crate::engine::stylesheet;
+use crate::engine::stylesheet::{self, PropertyValue};
 
 #[derive(Debug)]
 pub struct AppliedStyle {
-    key: Rc<str>,
-    value: Rc<stylesheet::Value>,
-    important: bool,
-    origin: stylesheet::Origin,
-    rule_specificity: stylesheet::Specificity,
+    pub key: Rc<String>,
+    pub value: Rc<PropertyValue>,
+    pub origin: stylesheet::Origin,
+    pub rule_specificity: stylesheet::Specificity,
 }

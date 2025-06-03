@@ -13,6 +13,8 @@ pub use pretty_print_tree::*;
 pub mod select;
 pub use select::*;
 
+pub mod iterator;
+
 pub type SharedNode = Arc<RwLock<Node>>;
 pub type WeakSharedNode = Weak<RwLock<Node>>;
 
