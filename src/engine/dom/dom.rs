@@ -1,9 +1,15 @@
-use std::{collections::HashMap, str::FromStr as _};
+use std::{collections::HashMap, rc::Rc, str::FromStr as _};
 
-use crate::engine::stylesheet::{self, ComplexSelector, Stylesheet};
+use pest::Parser;
+
+use crate::engine::{
+    css,
+    stylesheet::{self, ComplexSelector, Specificity, Stylesheet},
+};
 
 use super::{
-    iterator::NodeIterator, AppliedStyle, ElementData, Node, NodeType, Select as _, SharedNode,
+    iterator::NodeIterator, AppliedStyle, ElementData, GetSetAttr, Node, NodeType, Select as _,
+    SharedNode,
 };
 
 #[derive(Debug)]
@@ -43,9 +49,10 @@ impl Dom {
     }
 
     pub fn refresh_styles(&mut self) -> anyhow::Result<()> {
-        // reset styles on every Element
+        // reset styles on every Element,
         for node in NodeIterator::from(&self.root) {
-            node.write().unwrap().applied_styles.clear();
+            let mut w = node.write().unwrap();
+            w.applied_styles.clear();
         }
 
         // apply styles
@@ -65,6 +72,27 @@ impl Dom {
                     }
                 }
             }
+        }
+
+        // add styles from the `style` attribute
+        for node in NodeIterator::from(&self.root) {
+            if let Some(raw_style) = node.get_attr("style")? {
+                let Some(css) =
+                    css::CssParser::parse(css::Rule::declaration_list, &raw_style)?.next()
+                else {
+                    continue;
+                };
+                let prop_map = css::parse_declarations(css);
+                let mut w = node.write().unwrap();
+                for (k, v) in prop_map {
+                    w.applied_styles.push(AppliedStyle {
+                        key: Rc::clone(&k),
+                        value: Rc::clone(&v),
+                        origin: stylesheet::Origin::Author,
+                        rule_specificity: Specificity(1, 0, 0, 0),
+                    });
+                }
+            };
         }
 
         Ok(())

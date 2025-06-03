@@ -37,11 +37,19 @@ pub fn parse_qualified_rule(pair: Pair<Rule>) -> stylesheet::Rule {
     let selector = parse_selector(selector);
 
     let declarations = inner.next().unwrap();
-    let mut decl_map = HashMap::new();
-    for declaration in declarations.into_inner() {
+    let prop_map = parse_declarations(declarations);
+    stylesheet::Rule {
+        selector,
+        props: prop_map,
+    }
+}
+
+pub fn parse_declarations(pair: Pair<Rule>) -> stylesheet::PropMap {
+    let mut prop_map = HashMap::new();
+    for declaration in pair.into_inner() {
         let decls = parse_declaration(declaration);
         for (key, value) in decls {
-            decl_map.insert(
+            prop_map.insert(
                 Rc::from(key),
                 Rc::from(stylesheet::PropertyValue {
                     value,
@@ -50,11 +58,7 @@ pub fn parse_qualified_rule(pair: Pair<Rule>) -> stylesheet::Rule {
             );
         }
     }
-
-    stylesheet::Rule {
-        selector,
-        props: decl_map,
-    }
+    prop_map
 }
 
 pub fn parse_selector(pair: Pair<Rule>) -> stylesheet::ComplexSelector {

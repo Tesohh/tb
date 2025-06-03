@@ -36,8 +36,8 @@ impl GetSetAttr for SharedNode {
         };
         match &r.node_type {
             NodeType::Element(element_data) => Ok(element_data.attrs.get(key).cloned()),
-            NodeType::Text(_) => unreachable!("text nodes cannot have attributes"),
-            NodeType::Comment(_) => unreachable!("comment nodes cannot have attributes"),
+            NodeType::Text(_) => Ok(None),
+            NodeType::Comment(_) => Ok(None),
         }
     }
 }

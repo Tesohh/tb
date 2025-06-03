@@ -61,7 +61,7 @@ pub struct Rule {
 /// `b` = 1 if id is present
 /// `c` = amount of classes
 /// `d` = 1 if tag is present
-pub struct Specificity(usize, usize, usize, usize);
+pub struct Specificity(pub usize, pub usize, pub usize, pub usize);
 
 #[derive(Debug)]
 pub struct ComplexSelector {

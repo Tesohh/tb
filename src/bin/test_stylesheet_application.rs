@@ -5,6 +5,7 @@ fn main() -> anyhow::Result<()> {
         r#"
         <h1>Cissy</h1>
         <p class="yellow">iojwefijo</p>
+        <p style="color: pink">iojwefijo</p>
     "#,
     );
 
@@ -40,7 +41,7 @@ fn main() -> anyhow::Result<()> {
     dom.apply_stylesheet(sheet_agent)?;
     dom.apply_stylesheet(sheet_author)?;
 
-    dbg!(dom.root);
+    // dbg!(dom.root);
 
     Ok(())
 }
