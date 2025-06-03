@@ -1,5 +1,6 @@
 use crate::engine::stylesheet;
 
+#[derive(Debug)]
 pub struct AppliedStyle<'a> {
     key: &'a str,
     value: &'a stylesheet::Value,
