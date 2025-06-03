@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr as _};
 
 use crate::engine::stylesheet::{self, ComplexSelector};
 
@@ -23,7 +23,7 @@ impl Dom {
     }
 
     pub fn query_select(&self, query: &str) -> anyhow::Result<Vec<SharedNode>> {
-        self.root.select(&ComplexSelector::from(query)?)
+        self.root.select(&ComplexSelector::from_str(query)?)
     }
 
     pub fn select(

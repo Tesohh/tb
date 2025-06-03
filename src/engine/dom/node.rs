@@ -107,12 +107,14 @@ impl ElementData {
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use super::*;
     use crate::engine::stylesheet::{ComplexSelector, Selector};
     use hashmap_macro::hashmap;
 
     fn selector_helper(input: &str) -> Selector {
-        ComplexSelector::from(input).unwrap().inner[0].clone()
+        ComplexSelector::from_str(input).unwrap().inner[0].clone()
     }
 
     #[test]

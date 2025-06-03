@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 use pest::{iterators::Pair, Parser as _};
 use pest_derive::Parser;
@@ -117,7 +117,7 @@ pub fn parse_value(value: Pair<Rule>) -> stylesheet::Value {
             let mut dimension_inner = inner.into_inner();
             stylesheet::Value::Dimension(Dimension {
                 value: dimension_inner.next().unwrap().as_str().parse().unwrap(),
-                unit: stylesheet::Unit::from(dimension_inner.next().unwrap().as_str()),
+                unit: stylesheet::Unit::from_str(dimension_inner.next().unwrap().as_str()).unwrap(),
             })
         }
         _ => unreachable!(),

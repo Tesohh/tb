@@ -219,6 +219,7 @@ dependencies = [
  "pest_derive",
  "strum",
  "strum_macros",
+ "thiserror",
 ]
 
 [[package]]

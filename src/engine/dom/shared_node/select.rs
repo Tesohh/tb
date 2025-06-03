@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{str::FromStr, sync::Arc};
 
 use anyhow::Context;
 
@@ -16,7 +16,7 @@ pub trait Select {
 
 impl Select for SharedNode {
     fn query_select(&self, query: &str) -> anyhow::Result<Vec<SharedNode>> {
-        self.select(&ComplexSelector::from(query)?)
+        self.select(&ComplexSelector::from_str(query)?)
     }
 
     fn select(&self, selector: &stylesheet::ComplexSelector) -> anyhow::Result<Vec<SharedNode>> {

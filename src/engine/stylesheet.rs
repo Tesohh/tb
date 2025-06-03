@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display};
+use std::{collections::HashMap, fmt::Display, str::FromStr};
 
 use anyhow::bail;
 use owo_colors::OwoColorize;
@@ -36,8 +36,10 @@ pub struct ComplexSelector {
     pub combinators: Vec<Combinator>,
 }
 
-impl ComplexSelector {
-    pub fn from(input: &str) -> anyhow::Result<Self> {
+impl FromStr for ComplexSelector {
+    type Err = anyhow::Error;
+
+    fn from_str(input: &str) -> anyhow::Result<Self> {
         let mut pairs = css::CssParser::parse(css::Rule::complex_selector, input)?;
         let pair = match pairs.next() {
             Some(v) => v,
@@ -45,6 +47,9 @@ impl ComplexSelector {
         };
         Ok(css::parse_selector(pair))
     }
+}
+
+impl ComplexSelector {
     pub fn specificity(&self) -> Specificity {
         self.inner
             .iter()
@@ -118,10 +123,12 @@ pub enum Unit {
     Invalid,
 }
 
-impl From<&str> for Unit {
-    fn from(value: &str) -> Self {
+impl FromStr for Unit {
+    type Err = anyhow::Error;
+
+    fn from_str(value: &str) -> anyhow::Result<Self> {
         let value = value.to_lowercase();
-        match value.as_str() {
+        Ok(match value.as_str() {
             "px" => Unit::Px,
             "pt" => Unit::Pt,
             "q" => Unit::Q,
@@ -136,7 +143,7 @@ impl From<&str> for Unit {
             "%" => Unit::Percent,
             "" => Unit::Unitless,
             _ => Unit::Invalid,
-        }
+        })
     }
 }
 
