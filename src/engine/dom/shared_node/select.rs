@@ -20,8 +20,6 @@ impl Select for SharedNode {
     }
 
     fn select(&self, selector: &stylesheet::ComplexSelector) -> anyhow::Result<Vec<SharedNode>> {
-        let _self_lock = self.read().unwrap();
-
         // first pass
         let mut selectors = selector.inner.iter();
         let simple = selectors
