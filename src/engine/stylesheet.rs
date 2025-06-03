@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fmt::Display, str::FromStr};
+use std::{collections::HashMap, fmt::Display, rc::Rc, str::FromStr};
 
 use anyhow::bail;
 use owo_colors::OwoColorize;
@@ -32,7 +32,7 @@ pub enum Origin {
     Author,
 }
 
-pub type PropMap = HashMap<String, Value>;
+pub type PropMap = HashMap<Rc<String>, Rc<Value>>;
 
 #[derive(Debug)]
 pub struct Rule {
