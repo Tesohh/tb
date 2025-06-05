@@ -26,13 +26,30 @@ pub trait SharedNodeExt: Append + GetSetAttr + PrettyPrintTree + Select + AskSty
 impl SharedNodeExt for SharedNode {}
 
 #[derive(Error, Debug)]
+/// These errors should never happen, but you never know...
+pub enum UnreachableError {
+    #[error("selector's inner simple selector list is empty (should be unreachable)")]
+    SelectorHasNoSimpleSelectors,
+    #[error("selector has more combinators than inner selectors (should be unreachable)")]
+    SelectorHasMoreCombinatorsThanSelectors,
+    #[error("this node has no parent (likely it's root), and thus {0} (should be unreachable)")]
+    NoParentThus(&'static str),
+    #[error("node was not found in it's parent's children (should be unreachable)")]
+    NodeNotFoundInParentChildren,
+    #[error("somehow, node's index was found in it's parent's children, but get returned None (should be unreachable)")]
+    NodeIndexExistsButGetReturnedNone,
+}
+
+#[derive(Error, Debug)]
 pub enum Error {
     #[error("lock has been poisoned")]
     Poison,
     #[error("missing parent when upgrading the weak pointer")]
     MissingParentUpgrade,
-    #[error("selector's inner simple selector list is empty (should be unreachable)")]
-    SelectorHasNoSimpleSelectors,
+
+    #[error("")]
+    Unreachable(#[from] UnreachableError),
+
     #[error("generic error: {0}")]
     Generic(#[from] anyhow::Error),
 }

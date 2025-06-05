@@ -1,5 +1,3 @@
-use anyhow::Context;
-
 use crate::engine::dom::AppliedStyle;
 
 use super::{Error, Result, SharedNode};

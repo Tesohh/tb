@@ -1,14 +1,12 @@
 use std::{str::FromStr, sync::Arc};
 
-use anyhow::Context;
-
 use crate::engine::{
     dom::NodeType,
     stylesheet::{self, ComplexSelector},
 };
 
-use super::SharedNode;
 use super::{Error, Result};
+use super::{SharedNode, UnreachableError};
 
 pub trait Select {
     fn query_select(&self, query: &str) -> Result<Vec<SharedNode>>;
@@ -25,14 +23,14 @@ impl Select for SharedNode {
         let mut selectors = selector.inner.iter();
         let simple = selectors
             .next()
-            .ok_or(Error::SelectorHasNoSimpleSelectors)?;
+            .ok_or(UnreachableError::SelectorHasNoSimpleSelectors)?;
         let mut candidates = self.select_simple_recursive(simple)?;
 
         // go through combinators
         for combinator in &selector.combinators {
-            let simple = selectors.next().context(
-                "selector has more combinators than inner selectors (should be unreachable)",
-            )?;
+            let simple = selectors
+                .next()
+                .ok_or(UnreachableError::SelectorHasMoreCombinatorsThanSelectors)?;
 
             let algo = match combinator {
                 stylesheet::Combinator::Descendant => SharedNode::select_simple_recursive,
@@ -103,9 +101,11 @@ impl SelectHelper for SharedNode {
         let parent = self_lock
             .parent
             .as_ref()
-            .context("cannot check siblings of node with no parent (likely root)")?
+            .ok_or(UnreachableError::NoParentThus(
+                "you cannot check it for siblings",
+            ))?
             .upgrade()
-            .context("parent does not exist")?;
+            .ok_or(Error::MissingParentUpgrade)?;
 
         let parent_lock = parent.read()?;
         // find my position on my parent
@@ -113,7 +113,7 @@ impl SelectHelper for SharedNode {
             .children
             .iter()
             .position(|child| Arc::ptr_eq(child, self))
-            .context("somehow, node was not found in it's parent's children")?;
+            .ok_or(UnreachableError::NodeNotFoundInParentChildren)?;
 
         // then start the iterator from there
         let mut candidates = vec![];
@@ -135,20 +135,23 @@ impl SelectHelper for SharedNode {
         let parent = self_lock
             .parent
             .as_ref()
-            .context("cannot check siblings of node with no parent (likely root)")?
+            .ok_or(UnreachableError::NoParentThus(
+                "you cannot check it for siblings",
+            ))?
             .upgrade()
-            .context("parent does not exist")?;
+            .ok_or(Error::MissingParentUpgrade)?;
 
         let parent_lock = parent.read()?;
         let index = parent_lock
             .children
             .iter()
             .position(|child| Arc::ptr_eq(child, self))
-            .context("somehow, node was not found in it's parent's children")?;
+            .ok_or(UnreachableError::NodeNotFoundInParentChildren)?;
 
-        let sibling = parent_lock.children.get(index + 1).context(
-            "somehow, node's index was found in it's parent's children, but get returned None",
-        )?;
+        let sibling = parent_lock
+            .children
+            .get(index + 1)
+            .ok_or(UnreachableError::NodeIndexExistsButGetReturnedNone)?;
 
         let mut candidates = vec![];
         let sibling_lock = sibling.read()?;
