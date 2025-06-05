@@ -10,4 +10,14 @@ so that inspired me to make a terminal browser.
 - Terminal browser
 - [Torcol](https://github.com/Tesohh/torcolrs) Browser
 - Tubre browser
+- The browser
 - Terbium (the element, inspired by chromium)
+
+
+## credits
+Special thanks to Matt Brubeck for his excellent 
+[series of articles](https://limpet.net/mbrubeck/2014/08/08/toy-layout-engine-1.html) on building a browser engine. 
+His work was incredibly helpful when I was starting out.
+
+This project builds on his approach, though the web engine implementation diverges 
+significantly toward the end to support additional features and improvements.
