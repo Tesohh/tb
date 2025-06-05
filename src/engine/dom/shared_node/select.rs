@@ -8,23 +8,24 @@ use crate::engine::{
 };
 
 use super::SharedNode;
+use super::{Error, Result};
 
 pub trait Select {
-    fn query_select(&self, query: &str) -> anyhow::Result<Vec<SharedNode>>;
-    fn select(&self, selector: &stylesheet::ComplexSelector) -> anyhow::Result<Vec<SharedNode>>;
+    fn query_select(&self, query: &str) -> Result<Vec<SharedNode>>;
+    fn select(&self, selector: &stylesheet::ComplexSelector) -> Result<Vec<SharedNode>>;
 }
 
 impl Select for SharedNode {
-    fn query_select(&self, query: &str) -> anyhow::Result<Vec<SharedNode>> {
+    fn query_select(&self, query: &str) -> Result<Vec<SharedNode>> {
         self.select(&ComplexSelector::from_str(query)?)
     }
 
-    fn select(&self, selector: &stylesheet::ComplexSelector) -> anyhow::Result<Vec<SharedNode>> {
+    fn select(&self, selector: &stylesheet::ComplexSelector) -> Result<Vec<SharedNode>> {
         // first pass
         let mut selectors = selector.inner.iter();
         let simple = selectors
             .next()
-            .context("selector's inner simple selector list is empty (should be unreachable)")?;
+            .ok_or(Error::SelectorHasNoSimpleSelectors)?;
         let mut candidates = self.select_simple_recursive(simple)?;
 
         // go through combinators
@@ -43,7 +44,7 @@ impl Select for SharedNode {
             candidates = candidates
                 .into_iter()
                 .map(|node| algo(&node, simple))
-                .collect::<anyhow::Result<Vec<_>>>()?
+                .collect::<Result<Vec<_>>>()?
                 .into_iter()
                 .flatten()
                 .collect();
@@ -54,34 +55,19 @@ impl Select for SharedNode {
 }
 
 trait SelectHelper {
-    fn select_simple_recursive(
-        &self,
-        simple: &stylesheet::Selector,
-    ) -> anyhow::Result<Vec<SharedNode>>;
-    fn select_simple_no_recursive(
-        &self,
-        simple: &stylesheet::Selector,
-    ) -> anyhow::Result<Vec<SharedNode>>;
-    fn select_simple_all_next(
-        &self,
-        simple: &stylesheet::Selector,
-    ) -> anyhow::Result<Vec<SharedNode>>;
-    fn select_simple_only_next(
-        &self,
-        simple: &stylesheet::Selector,
-    ) -> anyhow::Result<Vec<SharedNode>>;
+    fn select_simple_recursive(&self, simple: &stylesheet::Selector) -> Result<Vec<SharedNode>>;
+    fn select_simple_no_recursive(&self, simple: &stylesheet::Selector) -> Result<Vec<SharedNode>>;
+    fn select_simple_all_next(&self, simple: &stylesheet::Selector) -> Result<Vec<SharedNode>>;
+    fn select_simple_only_next(&self, simple: &stylesheet::Selector) -> Result<Vec<SharedNode>>;
 }
 
 impl SelectHelper for SharedNode {
-    fn select_simple_recursive(
-        &self,
-        simple: &stylesheet::Selector,
-    ) -> anyhow::Result<Vec<SharedNode>> {
-        let self_lock = self.read().unwrap();
+    fn select_simple_recursive(&self, simple: &stylesheet::Selector) -> Result<Vec<SharedNode>> {
+        let self_lock = self.read()?;
         let mut candidates = vec![];
 
         for child in self_lock.children.iter() {
-            let child_lock = child.read().unwrap(); // unwrap on poison
+            let child_lock = child.read()?;
 
             // if it isnt an element, we don't even want to match it, so completely ignore it
             if let NodeType::Element(element) = &child_lock.node_type {
@@ -95,15 +81,12 @@ impl SelectHelper for SharedNode {
         Ok(candidates)
     }
 
-    fn select_simple_no_recursive(
-        &self,
-        simple: &stylesheet::Selector,
-    ) -> anyhow::Result<Vec<SharedNode>> {
-        let self_lock = self.read().unwrap();
+    fn select_simple_no_recursive(&self, simple: &stylesheet::Selector) -> Result<Vec<SharedNode>> {
+        let self_lock = self.read()?;
         let mut candidates = vec![];
 
         for child in self_lock.children.iter() {
-            let child_lock = child.read().unwrap();
+            let child_lock = child.read()?;
 
             if let NodeType::Element(element) = &child_lock.node_type {
                 if element.matches_selector(simple) {
@@ -114,11 +97,8 @@ impl SelectHelper for SharedNode {
         Ok(candidates)
     }
 
-    fn select_simple_all_next(
-        &self,
-        simple: &stylesheet::Selector,
-    ) -> anyhow::Result<Vec<SharedNode>> {
-        let self_lock = self.read().unwrap();
+    fn select_simple_all_next(&self, simple: &stylesheet::Selector) -> Result<Vec<SharedNode>> {
+        let self_lock = self.read()?;
 
         let parent = self_lock
             .parent
@@ -127,7 +107,7 @@ impl SelectHelper for SharedNode {
             .upgrade()
             .context("parent does not exist")?;
 
-        let parent_lock = parent.read().unwrap();
+        let parent_lock = parent.read()?;
         // find my position on my parent
         let index = parent_lock
             .children
@@ -138,7 +118,7 @@ impl SelectHelper for SharedNode {
         // then start the iterator from there
         let mut candidates = vec![];
         for sibling in parent_lock.children.iter().skip(index + 1) {
-            let sibling_lock = sibling.read().unwrap();
+            let sibling_lock = sibling.read()?;
             if let NodeType::Element(element) = &sibling_lock.node_type {
                 if element.matches_selector(simple) {
                     candidates.push(Arc::clone(sibling));
@@ -149,11 +129,8 @@ impl SelectHelper for SharedNode {
         Ok(candidates)
     }
 
-    fn select_simple_only_next(
-        &self,
-        simple: &stylesheet::Selector,
-    ) -> anyhow::Result<Vec<SharedNode>> {
-        let self_lock = self.read().unwrap();
+    fn select_simple_only_next(&self, simple: &stylesheet::Selector) -> Result<Vec<SharedNode>> {
+        let self_lock = self.read()?;
 
         let parent = self_lock
             .parent
@@ -162,7 +139,7 @@ impl SelectHelper for SharedNode {
             .upgrade()
             .context("parent does not exist")?;
 
-        let parent_lock = parent.read().unwrap();
+        let parent_lock = parent.read()?;
         let index = parent_lock
             .children
             .iter()
@@ -174,7 +151,7 @@ impl SelectHelper for SharedNode {
         )?;
 
         let mut candidates = vec![];
-        let sibling_lock = sibling.read().unwrap();
+        let sibling_lock = sibling.read()?;
         if let NodeType::Element(element) = &sibling_lock.node_type {
             if element.matches_selector(simple) {
                 candidates.push(Arc::clone(sibling));

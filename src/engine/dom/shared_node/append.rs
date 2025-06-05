@@ -1,59 +1,42 @@
 use std::sync::Arc;
 
-use anyhow::{anyhow, bail};
-
 use crate::engine::dom::{AttrMap, ElementData, Node, NodeType};
 
-use super::SharedNode;
+use super::{Result, SharedNode};
 
 pub trait Append
 where
     Self: std::marker::Sized,
 {
-    fn append_node(&self, node: Node) -> anyhow::Result<Self>;
-    fn append_shared_node(&self, node: SharedNode) -> anyhow::Result<Self>;
-    fn append_element(&self, tag: &str, attrs: Option<AttrMap>) -> anyhow::Result<Self>;
-    fn append_text(&self, text: &str) -> anyhow::Result<Self>;
-    fn append_comment(&self, text: &str) -> anyhow::Result<Self>;
+    fn append_node(&self, node: Node) -> Result<Self>;
+    fn append_shared_node(&self, node: SharedNode) -> Result<Self>;
+    fn append_element(&self, tag: &str, attrs: Option<AttrMap>) -> Result<Self>;
+    fn append_text(&self, text: &str) -> Result<Self>;
+    fn append_comment(&self, text: &str) -> Result<Self>;
 }
 
 impl Append for SharedNode {
     /// append a new node to the children of this node, and set the parent on the new node
-    fn append_node(&self, mut node: Node) -> anyhow::Result<SharedNode> {
+    fn append_node(&self, mut node: Node) -> Result<SharedNode> {
         let weak = Arc::downgrade(&self.clone());
         node.parent = Some(weak);
 
-        let w = self.write();
-        match w {
-            Ok(mut w) => {
-                let shared = node.into_shared();
-                w.children.push(shared.clone());
-                Ok(shared)
-            }
-            Err(_) => Err(anyhow!("poison error while appending new node!!")),
-        }
+        let mut w = self.write()?;
+        let shared = node.into_shared();
+        w.children.push(shared.clone());
+        Ok(shared)
     }
 
-    fn append_shared_node(&self, node: SharedNode) -> anyhow::Result<SharedNode> {
+    fn append_shared_node(&self, node: SharedNode) -> Result<SharedNode> {
         let weak = Arc::downgrade(&self.clone());
-        match node.write() {
-            Ok(mut w) => {
-                w.parent = Some(weak);
-            }
-            Err(_) => bail!("poison error while appending new node!!"),
-        }
+        node.write()?.parent = Some(weak);
 
-        let w = self.write();
-        match w {
-            Ok(mut w) => {
-                w.children.push(node.clone());
-                Ok(node)
-            }
-            Err(_) => Err(anyhow!("poison error while appending new node!!")),
-        }
+        let mut self_w = self.write()?;
+        self_w.children.push(node.clone());
+        Ok(node)
     }
 
-    fn append_element(&self, tag: &str, attrs: Option<AttrMap>) -> anyhow::Result<SharedNode> {
+    fn append_element(&self, tag: &str, attrs: Option<AttrMap>) -> Result<SharedNode> {
         let node = Node::new(NodeType::Element(ElementData {
             tag: tag.into(),
             attrs: attrs.unwrap_or_default(),
@@ -62,12 +45,12 @@ impl Append for SharedNode {
         self.append_node(node)
     }
 
-    fn append_text(&self, text: &str) -> anyhow::Result<SharedNode> {
+    fn append_text(&self, text: &str) -> Result<SharedNode> {
         let node = Node::new(NodeType::Text(text.into()));
         self.append_node(node)
     }
 
-    fn append_comment(&self, text: &str) -> anyhow::Result<SharedNode> {
+    fn append_comment(&self, text: &str) -> Result<SharedNode> {
         let node = Node::new(NodeType::Comment(text.into()));
         self.append_node(node)
     }

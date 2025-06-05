@@ -50,7 +50,8 @@ impl Dom {
 
     pub fn refresh_styles(&mut self) -> anyhow::Result<()> {
         // reset styles on every Element,
-        for node in NodeIterator::from(&self.root) {
+        for node in NodeIterator::try_from(&self.root)? {
+            let node = node?;
             let mut w = node.write().unwrap();
             w.applied_styles.clear();
         }
@@ -75,7 +76,8 @@ impl Dom {
         }
 
         // add styles from the `style` attribute
-        for node in NodeIterator::from(&self.root) {
+        for node in NodeIterator::try_from(&self.root)? {
+            let node = node?;
             if let Some(raw_style) = node.get_attr("style")? {
                 let Some(css) =
                     css::CssParser::parse(css::Rule::declaration_list, &raw_style)?.next()

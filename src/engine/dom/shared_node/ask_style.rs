@@ -2,15 +2,15 @@ use anyhow::Context;
 
 use crate::engine::dom::AppliedStyle;
 
-use super::SharedNode;
+use super::{Error, Result, SharedNode};
 
 pub trait AskStyle {
-    fn ask_style(&self, key: &str) -> anyhow::Result<Option<AppliedStyle>>;
+    fn ask_style(&self, key: &str) -> Result<Option<AppliedStyle>>;
 }
 
 impl AskStyle for SharedNode {
-    fn ask_style(&self, key: &str) -> anyhow::Result<Option<AppliedStyle>> {
-        let r = self.read().unwrap();
+    fn ask_style(&self, key: &str) -> Result<Option<AppliedStyle>> {
+        let r = self.read()?;
         let mut filtered: Vec<_> = r
             .applied_styles
             .iter()
@@ -34,19 +34,18 @@ impl AskStyle for SharedNode {
             // Cloning AppliedStyle is cheap.. it only contains Rc, enum and Specificity
             Ok(filtered.first().map(|s| (*s).clone()))
         } else {
-            // TODO: ask my parent...
             if !INHERITABLE_PROPERTIES.contains(&key) {
                 return Ok(None);
             }
 
-            let r = self.read().unwrap();
+            let r = self.read()?;
 
             // if r.Parent is None, this is the root node
             let Some(ref parent) = r.parent else {
                 return Ok(None);
             };
 
-            let parent = parent.upgrade().context("parent does not exist")?;
+            let parent = parent.upgrade().ok_or(Error::MissingParentUpgrade)?;
 
             parent.ask_style(key)
         }

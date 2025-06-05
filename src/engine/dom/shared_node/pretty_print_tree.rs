@@ -1,19 +1,14 @@
-use anyhow::bail;
-
+use super::Result;
 use super::SharedNode;
 
 pub trait PrettyPrintTree {
-    fn pretty_print_tree(&self, depth: usize) -> anyhow::Result<()>;
+    fn pretty_print_tree(&self, depth: usize) -> Result<()>;
 }
 
 impl PrettyPrintTree for SharedNode {
-    fn pretty_print_tree(&self, depth: usize) -> anyhow::Result<()> {
+    fn pretty_print_tree(&self, depth: usize) -> Result<()> {
         let indent = (0..depth).map(|_| "   ").collect::<String>();
-        let node = match self.read() {
-            Ok(v) => v,
-            Err(e) => bail!("{}", e),
-        };
-
+        let node = self.read()?;
         println!("{}{}", indent, node);
 
         for child in node.children.iter() {

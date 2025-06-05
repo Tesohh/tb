@@ -1,20 +1,15 @@
-use anyhow::bail;
-
 use crate::engine::dom::NodeType;
 
-use super::SharedNode;
+use super::{Result, SharedNode};
 
 pub trait GetSetAttr {
-    fn set_attr(&self, key: &str, value: &str) -> anyhow::Result<()>;
-    fn get_attr(&self, key: &str) -> anyhow::Result<Option<String>>;
+    fn set_attr(&self, key: &str, value: &str) -> Result<()>;
+    fn get_attr(&self, key: &str) -> Result<Option<String>>;
 }
 
 impl GetSetAttr for SharedNode {
-    fn set_attr(&self, key: &str, value: &str) -> anyhow::Result<()> {
-        let mut w = match self.write() {
-            Ok(v) => v,
-            Err(e) => bail!("{}", e),
-        };
+    fn set_attr(&self, key: &str, value: &str) -> Result<()> {
+        let mut w = self.write()?;
         match &mut w.node_type {
             NodeType::Element(element_data) => {
                 element_data
@@ -29,11 +24,8 @@ impl GetSetAttr for SharedNode {
         }
     }
 
-    fn get_attr(&self, key: &str) -> anyhow::Result<Option<String>> {
-        let r = match self.read() {
-            Ok(v) => v,
-            Err(e) => bail!("{}", e),
-        };
+    fn get_attr(&self, key: &str) -> Result<Option<String>> {
+        let r = self.read()?;
         match &r.node_type {
             NodeType::Element(element_data) => Ok(element_data.attrs.get(key).cloned()),
             NodeType::Text(_) => Ok(None),
