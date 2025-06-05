@@ -187,12 +187,34 @@ impl SelectHelper for SharedNode {
 
 #[cfg(test)]
 mod test {
-    use std::fs;
-
     #[test]
     fn test_selectors() {
-        let input = fs::read_to_string("samples/helloweb/index.html").unwrap();
-        let dom = crate::engine::html::parse_from_str(&input).unwrap();
+        let input = r#"
+        <!DOCTYPE html>
+
+        <head>
+            <title>Hello web</title>
+            <style>
+                .yellow {
+                    color: yellow;
+                }
+            </style>
+        </head>
+
+        <body>
+            <h1 id="title">Hello Web</h1>
+            <div class="lorem-blue">
+                <p>Lorem ipsum, dolor sit amet consectetur adipisicing elit. Error, consequuntur!</p>
+            </div>
+
+            <div id="second-paragraph">
+                <p>Lorem ipsum dolor sit amet consectetur adipisicing elit. Animi, sit.</p>
+            </div>
+
+            <p class="yellow">Lorem ipsum dolor sit amet consectetur adipisicing elit. Animi, sit.</p>
+        </body>
+        "#;
+        let dom = crate::engine::html::parse_from_str(input).unwrap();
 
         let basic_class = dom.query_select(".yellow").unwrap().len();
         assert_eq!(basic_class, 1);
