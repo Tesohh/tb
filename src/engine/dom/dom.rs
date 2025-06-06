@@ -32,23 +32,23 @@ impl Dom {
         }
     }
 
-    pub fn query_select(&self, query: &str) -> anyhow::Result<Vec<SharedNode>> {
-        self.root.select(&ComplexSelector::from_str(query)?)
+    pub fn query_select(&self, query: &str) -> super::super::Result<Vec<SharedNode>> {
+        Ok(self.root.select(&ComplexSelector::from_str(query)?)?)
     }
 
     pub fn select(
         &self,
         selector: &stylesheet::ComplexSelector,
-    ) -> anyhow::Result<Vec<SharedNode>> {
-        self.root.select(selector)
+    ) -> super::super::Result<Vec<SharedNode>> {
+        Ok(self.root.select(selector)?)
     }
 
-    pub fn apply_stylesheet(&mut self, stylesheet: Stylesheet) -> anyhow::Result<()> {
+    pub fn apply_stylesheet(&mut self, stylesheet: Stylesheet) -> super::super::Result<()> {
         self.stylesheets.push(stylesheet);
         self.refresh_styles()
     }
 
-    pub fn refresh_styles(&mut self) -> anyhow::Result<()> {
+    pub fn refresh_styles(&mut self) -> super::super::Result<()> {
         // reset styles on every Element,
         for node in NodeIterator::try_from(&self.root)? {
             let node = node?;
@@ -79,8 +79,9 @@ impl Dom {
         for node in NodeIterator::try_from(&self.root)? {
             let node = node?;
             if let Some(raw_style) = node.get_attr("style")? {
-                let Some(css) =
-                    css::CssParser::parse(css::Rule::declaration_list, &raw_style)?.next()
+                let Some(css) = css::CssParser::parse(css::Rule::declaration_list, &raw_style)
+                    .map_err(Box::new)?
+                    .next()
                 else {
                     continue;
                 };

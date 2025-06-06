@@ -1,8 +1,8 @@
-use std::fs;
+use std::{error::Error, fs};
 
 use tb::engine::dom::PrettyPrintTree as _;
 
-fn main() -> anyhow::Result<()> {
+fn main() -> Result<(), Box<dyn Error>> {
     let input = fs::read_to_string("samples/helloweb/index.html")?;
     let dom = tb::engine::html::parse_from_str(&input)?;
     dbg!(dom.query_select(".yellow")?.len());
@@ -11,5 +11,7 @@ fn main() -> anyhow::Result<()> {
     dbg!(dom.query_select("body>div>p")?.len());
     dbg!(dom.query_select("h1 ~ div")?.len());
     dbg!(dom.query_select("h1 + div")?.len());
-    dom.root.pretty_print_tree(0)
+    dom.root.pretty_print_tree(0)?;
+
+    Ok(())
 }

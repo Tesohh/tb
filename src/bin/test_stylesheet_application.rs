@@ -1,6 +1,8 @@
+use std::error::Error;
+
 use tb::engine::{dom::AskStyle, stylesheet::Origin};
 
-fn main() -> anyhow::Result<()> {
+fn main() -> Result<(), Box<dyn Error>> {
     let html_input = String::from(
         r#"
         <h1>Cissy</h1>

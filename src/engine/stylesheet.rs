@@ -1,11 +1,12 @@
 use std::{collections::HashMap, fmt::Display, rc::Rc, str::FromStr};
 
-use anyhow::bail;
-use owo_colors::OwoColorize;
 use pest::Parser as _;
 use strum_macros::Display;
 
-use super::css::{self};
+use super::{
+    css::{self},
+    Error, Result,
+};
 
 #[derive(Debug)]
 pub struct Stylesheet {
@@ -70,13 +71,14 @@ pub struct ComplexSelector {
 }
 
 impl FromStr for ComplexSelector {
-    type Err = anyhow::Error;
+    type Err = super::Error;
 
-    fn from_str(input: &str) -> anyhow::Result<Self> {
-        let mut pairs = css::CssParser::parse(css::Rule::complex_selector, input)?;
+    fn from_str(input: &str) -> Result<Self> {
+        let mut pairs =
+            css::CssParser::parse(css::Rule::complex_selector, input).map_err(|e| Box::new(e))?;
         let pair = match pairs.next() {
             Some(v) => v,
-            None => bail!("invalid selector passed to Selector::from"),
+            None => return Err(Error::InvalidSelector),
         };
         Ok(css::parse_selector(pair))
     }
@@ -160,9 +162,9 @@ pub enum Unit {
 }
 
 impl FromStr for Unit {
-    type Err = anyhow::Error;
+    type Err = super::Error;
 
-    fn from_str(value: &str) -> anyhow::Result<Self> {
+    fn from_str(value: &str) -> Result<Self> {
         let value = value.to_lowercase();
         Ok(match value.as_str() {
             "px" => Unit::Px,
@@ -195,9 +197,8 @@ impl Display for Color {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "{}",
-            format!("#{:02x}{:02x}{:02x}{:02x}", self.r, self.g, self.b, self.a)
-                .on_truecolor(self.r, self.g, self.b)
+            "#{:02x}{:02x}{:02x}{:02x}",
+            self.r, self.g, self.b, self.a
         )
     }
 }

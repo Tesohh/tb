@@ -4,8 +4,6 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-use owo_colors::OwoColorize;
-
 use crate::engine::stylesheet;
 
 use super::{AppliedStyle, SharedNode, WeakSharedNode};
@@ -46,20 +44,16 @@ impl Node {
 impl Display for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match &self.node_type {
-            NodeType::Text(text) => write!(
-                f,
-                "{}",
-                format!("\"{}\"", text.chars().take(24).collect::<String>()).yellow()
-            ),
+            NodeType::Text(text) => write!(f, "\"{}\"", text.chars().take(24).collect::<String>()),
             NodeType::Comment(comment) => write!(
                 f,
-                "{}",
-                format!("<!-- {} -->", comment.chars().take(24).collect::<String>()).dimmed()
+                "<!-- {} -->",
+                comment.chars().take(24).collect::<String>()
             ),
             NodeType::Element(element_data) => {
-                write!(f, "{}", element_data.tag.green())?;
+                write!(f, "{}", element_data.tag)?;
                 for (k, v) in &element_data.attrs {
-                    write!(f, " {}{}{}", k.dimmed(), "=".bright_black(), v.yellow())?;
+                    write!(f, " {}={}", k, v)?;
                 }
                 Ok(())
             }
@@ -114,7 +108,6 @@ mod tests {
 
     use super::*;
     use crate::engine::stylesheet::{ComplexSelector, Selector};
-    use hashmap_macro::hashmap;
 
     fn selector_helper(input: &str) -> Selector {
         ComplexSelector::from_str(input).unwrap().inner[0].clone()
@@ -124,7 +117,10 @@ mod tests {
     fn selector_matching() {
         let element = ElementData {
             tag: "h1".into(),
-            attrs: hashmap! { "class".into() => "yellow red pink".into(), "id".into() => "ooo".into() },
+            attrs: HashMap::from([
+                ("class".into(), "yellow red pink".into()),
+                ("id".into(), "ooo".into()),
+            ]),
         };
 
         let matches = [

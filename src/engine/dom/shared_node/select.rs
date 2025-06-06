@@ -15,7 +15,8 @@ pub trait Select {
 
 impl Select for SharedNode {
     fn query_select(&self, query: &str) -> Result<Vec<SharedNode>> {
-        self.select(&ComplexSelector::from_str(query)?)
+        // FIX: this will lose information
+        self.select(&ComplexSelector::from_str(query).or(Err(Error::SelectorParsing))?)
     }
 
     fn select(&self, selector: &stylesheet::ComplexSelector) -> Result<Vec<SharedNode>> {
