@@ -34,6 +34,8 @@ pub enum UnreachableError {
     SelectorHasMoreCombinatorsThanSelectors,
     #[error("this node has no parent (likely it's root), and thus {0}")]
     NoParentThus(&'static str),
+    #[error("this node has no parent (likely it's root)")]
+    NoParent,
     #[error("node was not found in it's parent's children")]
     NodeNotFoundInParentChildren,
     #[error("node's index was found in it's parent's children, but get returned None")]

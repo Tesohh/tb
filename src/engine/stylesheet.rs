@@ -5,6 +5,7 @@ use strum_macros::Display;
 
 use super::{
     css::{self},
+    dom::{shared_node, AskStyle, SharedNode},
     Error, Result,
 };
 
@@ -132,25 +133,117 @@ pub enum Value {
     Color(Color),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Dimension {
     pub value: f64,
     pub unit: Unit,
 }
 
+#[derive(Error, Debug)]
+pub enum DimensionError {
+    #[error("cannot calculate percentage dimension on property \"{prop_name}\" that is not applied to parent")]
+    MissingPropOnParent { prop_name: String },
+    #[error("cannot calculate percentage dimension on property \"{prop_name}\" that is a color on parent")]
+    PropParentIsColor { prop_name: String },
+    #[error("cannot calculate percentage dimension on property \"{prop_name}\" that is a keyword on parent")]
+    PropParentIsKeyword { prop_name: String },
+    #[error("as_tb_trivial cannot convert a relative unit")]
+    Relative,
+    #[error("cannot convert a unitless or invalid unit")]
+    Invalid,
+    #[error("shared node error: {0}")]
+    SharedNodeError(#[from] shared_node::Error),
+}
+
+const PX_TO_TB: f64 = 8.0;
+impl Dimension {
+    pub fn as_tb(
+        &self,
+        parent: &SharedNode,
+        prop_name: &str,
+        viewport: (u16, u16),
+    ) -> core::result::Result<Dimension, DimensionError> {
+        let value = match self.unit {
+            Unit::Px => self.value / PX_TO_TB,
+            Unit::Pt => self.value * (1.0 / 72.0) * 96.0 / PX_TO_TB,
+            Unit::Q => self.value * 0.945 / PX_TO_TB,
+            Unit::Mm => self.value * 3.78 / PX_TO_TB,
+            Unit::Cm => self.value * 37.8 / PX_TO_TB,
+            Unit::Pc => self.value * 16.0 / PX_TO_TB,
+            Unit::In => self.value * 96.0 / PX_TO_TB,
+            Unit::Tb => self.value,
+            Unit::Em | Unit::Rem => self.value, // font size is always 1tb on everything no matter what
+            Unit::Vw => (Into::<f64>::into(viewport.0) / 100.0) * self.value,
+            Unit::Vh => (Into::<f64>::into(viewport.1) / 100.0) * self.value,
+            Unit::Percent => {
+                let style =
+                    parent
+                        .ask_style(prop_name)?
+                        .ok_or(DimensionError::MissingPropOnParent {
+                            prop_name: prop_name.into(),
+                        })?;
+
+                match &style.value.value {
+                    Value::Keyword(_) => {
+                        return Err(DimensionError::PropParentIsKeyword {
+                            prop_name: prop_name.into(),
+                        })
+                    } // TODO: In this case we propbably need to ask a VM or something to compute the value
+                    Value::Color(_) => {
+                        return Err(DimensionError::PropParentIsColor {
+                            prop_name: prop_name.into(),
+                        })
+                    }
+                    Value::Dimension(dimension) => {
+                        let grandparent = parent
+                            .read()
+                            .or(Err(shared_node::Error::Poison))?
+                            .parent
+                            .clone()
+                            .ok_or(shared_node::Error::Unreachable(
+                                shared_node::UnreachableError::NoParent,
+                            ))?
+                            .upgrade()
+                            .ok_or(shared_node::Error::MissingParentUpgrade)?;
+
+                        let dimension_tb = dimension.as_tb(&grandparent, prop_name, viewport)?;
+
+                        (dimension_tb.value / 100.0) * self.value
+                    }
+                }
+            }
+            Unit::Unitless | Unit::Invalid => return Err(DimensionError::Invalid),
+        };
+
+        Ok(Dimension {
+            value: value.round(),
+            unit: Unit::Tb,
+        })
+    }
+
+    pub fn as_tb_u16(
+        &self,
+        parent: &SharedNode,
+        prop_name: &str,
+        viewport: (u16, u16),
+    ) -> core::result::Result<u16, DimensionError> {
+        Ok(self.as_tb(parent, prop_name, viewport)?.value as u16)
+    }
+}
+
 /// Describes a CSS Unit.
 /// These will eventually be transformed into "tb units"
-#[derive(Debug, Display)]
+#[derive(Debug, Display, Clone, Copy)]
 pub enum Unit {
     Px,  // pixel (1/96 in)
     Pt,  // point (1/72 in)
+    Pc,  // pica (1/6 in)
     Q,   // quarter-millimeter 1/40 cm
     Mm,  // millimeter
     Cm,  // centimeter
-    Pc,  // pica (1/6 in)
     In,  // inch
-    Em,  // relative to font size of element
-    Rem, // relative to font size of root
+    Em,  // relative to font size of element (always equal to 1tb)
+    Rem, // relative to font size of root (always equal to 1tb)
     Vh,  // relative to viewport height
     Vw,  // relative to viewport width
     Tb,  // tb unit == 1 cell (not standard CSS)
