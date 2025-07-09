@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use tb::engine::{
-    dom::{shared_node, AskStyle},
+    dom::{shared_node, AskStyle, Parent},
     stylesheet::{Origin, Value},
 };
 
@@ -72,20 +72,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         unreachable!()
     };
 
-    let parent = node
-        .read()
-        .or(Err(shared_node::Error::Poison))?
-        .parent
-        .clone()
-        .ok_or(shared_node::Error::Unreachable(
-            shared_node::UnreachableError::NoParent,
-        ))?
-        .upgrade()
-        .ok_or(shared_node::Error::MissingParentUpgrade)?;
+    let parent = node.parent()?;
 
-    dbg!(parent.ask_style("width"));
+    dbg!(parent.ask_style("width"))?;
 
-    dbg!(dim.as_tb(&parent, "width", (120, 60)));
+    dbg!(dim.as_tb(&parent, "width", (120, 60)))?;
 
     // dbg!(dom.root);
 

@@ -5,7 +5,7 @@ use strum_macros::Display;
 
 use super::{
     css::{self},
-    dom::{shared_node, AskStyle, SharedNode},
+    dom::{shared_node, AskStyle, Parent, SharedNode},
     Error, Result,
 };
 
@@ -195,17 +195,7 @@ impl Dimension {
                         })
                     }
                     Value::Dimension(dimension) => {
-                        let grandparent = parent
-                            .read()
-                            .or(Err(shared_node::Error::Poison))?
-                            .parent
-                            .clone()
-                            .ok_or(shared_node::Error::Unreachable(
-                                shared_node::UnreachableError::NoParent,
-                            ))?
-                            .upgrade()
-                            .ok_or(shared_node::Error::MissingParentUpgrade)?;
-
+                        let grandparent = parent.parent()?;
                         let dimension_tb = dimension.as_tb(&grandparent, prop_name, viewport)?;
 
                         (dimension_tb.value / 100.0) * self.value

@@ -22,7 +22,6 @@ impl Iterator for NodeIterator {
     }
 }
 
-// TODO: remove unwrap
 impl TryFrom<&SharedNode> for NodeIterator {
     type Error = super::Error;
 

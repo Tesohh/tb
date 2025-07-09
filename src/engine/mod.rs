@@ -3,6 +3,7 @@ use thiserror::Error;
 pub mod css;
 pub mod dom;
 pub mod html;
+pub mod layout;
 pub mod stylesheet;
 
 #[derive(Debug, Error)]
@@ -13,6 +14,8 @@ pub enum Error {
     HtmlParsingError(#[from] Box<pest::error::Error<html::Rule>>),
     #[error("CSS parsing error: {0}")]
     CssParsingError(#[from] Box<pest::error::Error<css::Rule>>),
+    #[error("Taffy (layout) error: {0}")]
+    TaffyError(#[from] taffy::TaffyError),
     #[error("invalid selector")]
     InvalidSelector,
 }

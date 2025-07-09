@@ -15,6 +15,10 @@ pub use select::*;
 
 pub mod ask_style;
 pub use ask_style::*;
+
+pub mod parent;
+pub use parent::Parent;
+
 use thiserror::Error;
 
 pub mod iterator;
@@ -22,7 +26,10 @@ pub mod iterator;
 pub type SharedNode = Arc<RwLock<Node>>;
 pub type WeakSharedNode = Weak<RwLock<Node>>;
 
-pub trait SharedNodeExt: Append + GetSetAttr + PrettyPrintTree + Select + AskStyle {}
+pub trait SharedNodeExt:
+    Append + GetSetAttr + PrettyPrintTree + Select + AskStyle + Parent
+{
+}
 impl SharedNodeExt for SharedNode {}
 
 #[derive(Error, Debug)]
