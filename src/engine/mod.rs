@@ -16,6 +16,8 @@ pub enum Error {
     CssParsingError(#[from] Box<pest::error::Error<css::Rule>>),
     #[error("Taffy (layout) error: {0}")]
     TaffyError(#[from] taffy::TaffyError),
+    #[error("Node not found in layout map")]
+    LayoutNodeNotFound,
     #[error("invalid selector")]
     InvalidSelector,
 }

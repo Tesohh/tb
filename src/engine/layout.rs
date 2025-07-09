@@ -7,7 +7,7 @@ use std::{
 use super::dom::{shared_node, SharedNode};
 
 type TaffyNodeContext = &'static str;
-pub type Tree = taffy::TaffyTree<TaffyNodeContext>;
+pub type LayoutTree = taffy::TaffyTree<TaffyNodeContext>;
 
 pub type LayoutMap = HashMap<LayoutKey, taffy::NodeId>;
 #[derive(Debug)]
@@ -28,32 +28,49 @@ impl Hash for LayoutKey {
     }
 }
 
-pub fn build_layout_tree(node: SharedNode) -> super::Result<(Tree, LayoutMap)> {
-    let mut tree: taffy::TaffyTree<TaffyNodeContext> = taffy::TaffyTree::new();
-    let mut map = LayoutMap::new();
-    convert_node_to_taffy(&mut tree, &mut map, node)?;
-    Ok((tree, map))
+pub struct LayoutManager {
+    pub tree: LayoutTree,
+    map: LayoutMap,
 }
 
-fn convert_node_to_taffy(
-    tree: &mut taffy::TaffyTree<TaffyNodeContext>, // TEMP:
-    map: &mut LayoutMap,
-    node: SharedNode,
-) -> super::Result<taffy::NodeId> {
-    let children: Vec<taffy::NodeId> = node
-        .read()
-        .or(Err(shared_node::Error::Poison))?
-        .children
-        .iter()
-        .map(|f| convert_node_to_taffy(tree, map, f.clone()))
-        .collect::<Result<Vec<_>, _>>()?;
+impl LayoutManager {
+    fn new() -> Self {
+        Self {
+            tree: taffy::TaffyTree::new(),
+            map: LayoutMap::new(),
+        }
+    }
 
-    // TODO: add styles
-    let taffy_node = tree.new_with_children(taffy::Style::DEFAULT, &children)?;
-    // TODO: actually add plain text context
-    tree.set_node_context(taffy_node, Some("LOREM IPSUM"))?;
+    pub fn build(&mut self, node: SharedNode) -> super::Result<taffy::NodeId> {
+        let children: Vec<taffy::NodeId> = node
+            .read()
+            .or(Err(shared_node::Error::Poison))?
+            .children
+            .iter()
+            .map(|f| self.build(node.clone()))
+            .collect::<Result<Vec<_>, _>>()?;
 
-    map.insert(LayoutKey(node.clone()), taffy_node);
+        // TODO: add styles
+        let taffy_node = self
+            .tree
+            .new_with_children(taffy::Style::DEFAULT, &children)?;
+        // TODO: actually add plain text context
+        self.tree
+            .set_node_context(taffy_node, Some("LOREM IPSUM"))?;
 
-    Ok(taffy_node)
+        self.map.insert(LayoutKey(node.clone()), taffy_node);
+
+        Ok(taffy_node)
+    }
+
+    pub fn get_node_id(&self, node: SharedNode) -> Option<taffy::NodeId> {
+        self.map.get(&LayoutKey(node)).copied()
+    }
+
+    pub fn get(&self, node: SharedNode) -> super::Result<&taffy::Layout> {
+        let id = self
+            .get_node_id(node)
+            .ok_or(super::Error::LayoutNodeNotFound)?;
+        Ok(self.tree.layout(id)?)
+    }
 }
