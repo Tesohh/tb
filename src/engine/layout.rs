@@ -34,7 +34,7 @@ pub struct LayoutManager {
 }
 
 impl LayoutManager {
-    fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             tree: taffy::TaffyTree::new(),
             map: LayoutMap::new(),
@@ -47,7 +47,7 @@ impl LayoutManager {
             .or(Err(shared_node::Error::Poison))?
             .children
             .iter()
-            .map(|f| self.build(node.clone()))
+            .map(|f| self.build(f.clone()))
             .collect::<Result<Vec<_>, _>>()?;
 
         // TODO: add styles
@@ -72,5 +72,11 @@ impl LayoutManager {
             .get_node_id(node)
             .ok_or(super::Error::LayoutNodeNotFound)?;
         Ok(self.tree.layout(id)?)
+    }
+}
+
+impl Default for LayoutManager {
+    fn default() -> Self {
+        Self::new()
     }
 }
