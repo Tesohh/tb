@@ -4,6 +4,8 @@ use std::{
     sync::Arc,
 };
 
+use taffy::{AvailableSpace, Size};
+
 use super::dom::{shared_node, SharedNode};
 
 type TaffyNodeContext = &'static str;
@@ -30,6 +32,7 @@ impl Hash for LayoutKey {
 
 pub struct LayoutManager {
     pub tree: LayoutTree,
+    pub root: Option<taffy::NodeId>,
     map: LayoutMap,
 }
 
@@ -37,23 +40,31 @@ impl LayoutManager {
     pub fn new() -> Self {
         Self {
             tree: taffy::TaffyTree::new(),
+            root: None,
             map: LayoutMap::new(),
         }
     }
 
-    pub fn build(&mut self, node: SharedNode) -> super::Result<taffy::NodeId> {
+    pub fn build(&mut self, node: SharedNode) -> super::Result<()> {
+        let root = self.convert_node_to_taffy(node)?;
+        self.root = Some(root);
+        Ok(())
+    }
+
+    fn convert_node_to_taffy(&mut self, node: SharedNode) -> super::Result<taffy::NodeId> {
         let children: Vec<taffy::NodeId> = node
             .read()
             .or(Err(shared_node::Error::Poison))?
             .children
             .iter()
-            .map(|f| self.build(f.clone()))
+            .map(|f| self.convert_node_to_taffy(f.clone()))
             .collect::<Result<Vec<_>, _>>()?;
 
         // TODO: add styles
         let taffy_node = self
             .tree
             .new_with_children(taffy::Style::DEFAULT, &children)?;
+
         // TODO: actually add plain text context
         self.tree
             .set_node_context(taffy_node, Some("LOREM IPSUM"))?;
@@ -72,6 +83,14 @@ impl LayoutManager {
             .get_node_id(node)
             .ok_or(super::Error::LayoutNodeNotFound)?;
         Ok(self.tree.layout(id)?)
+    }
+
+    pub fn compute(&mut self, available_space: Size<AvailableSpace>) -> super::Result<()> {
+        if let Some(root) = self.root {
+            Ok(self.tree.compute_layout(root, available_space)?)
+        } else {
+            Err(super::Error::LayoutRootNodeNone)
+        }
     }
 }
 

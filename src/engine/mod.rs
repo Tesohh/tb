@@ -18,6 +18,8 @@ pub enum Error {
     TaffyError(#[from] taffy::TaffyError),
     #[error("Node not found in layout map")]
     LayoutNodeNotFound,
+    #[error("Root node in layout manager is None. Did you forget to build it?")]
+    LayoutRootNodeNone,
     #[error("invalid selector")]
     InvalidSelector,
 }

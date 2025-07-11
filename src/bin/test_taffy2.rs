@@ -7,7 +7,7 @@ fn main() -> Result<(), taffy::TaffyError> {
     let dom = tb::engine::html::parse_from_str(&input).unwrap();
 
     let mut layout = engine::layout::LayoutManager::new();
-    let root_id = dbg!(layout.build(dom.root.clone()).unwrap());
+    layout.build(dom.root.clone()).unwrap();
     let title = dom.query_select("#title").unwrap()[0].clone();
     let l = layout.get(title).unwrap();
     dbg!(l);
