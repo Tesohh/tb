@@ -65,9 +65,9 @@ impl LayoutManager {
             .tree
             .new_with_children(taffy::Style::DEFAULT, &children)?;
 
-        // TODO: actually add plain text context
-        self.tree
-            .set_node_context(taffy_node, Some("LOREM IPSUM"))?;
+        // // TODO: actually add plain text context
+        // self.tree
+        //     .set_node_context(taffy_node, Some("LOREM IPSUM"))?;
 
         self.map.insert(LayoutKey(node.clone()), taffy_node);
 

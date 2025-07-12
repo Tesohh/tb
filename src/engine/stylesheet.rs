@@ -126,7 +126,7 @@ pub enum Combinator {
     GeneralSibling,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Value {
     Keyword(String),
     Dimension(Dimension),
@@ -268,7 +268,7 @@ impl FromStr for Unit {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Color {
     pub r: u8,
     pub g: u8,
