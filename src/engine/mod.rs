@@ -4,6 +4,7 @@ pub mod css;
 pub mod dom;
 pub mod html;
 pub mod layout;
+mod style_to_taffy;
 pub mod stylesheet;
 
 #[derive(Debug, Error)]

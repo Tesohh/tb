@@ -131,6 +131,7 @@ pub enum Value {
     Keyword(String),
     Dimension(Dimension),
     Color(Color),
+    None,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -200,6 +201,7 @@ impl Dimension {
 
                         (dimension_tb.value / 100.0) * self.value
                     }
+                    Value::None => unreachable!(),
                 }
             }
             Unit::Unitless | Unit::Invalid => return Err(DimensionError::Invalid),

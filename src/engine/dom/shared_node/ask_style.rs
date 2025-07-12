@@ -5,12 +5,37 @@ use super::{Error, Result, SharedNode};
 pub trait AskStyle {
     fn ask_style(&self, key: &str) -> Result<Option<AppliedStyle>>;
 
+    // convenient helper function for ask_style
+    // if no value is found given
+    fn get_style(&self, key: &str) -> stylesheet::Value {
+        let result = self.ask_style(key);
+        if let Ok(Some(applied_style)) = result {
+            applied_style.value.value.clone()
+        } else {
+            stylesheet::Value::None
+        }
+    }
+
+    // convenient helper function for ask_style.
+    // if the `key` is not found, try the `fallback_key`
+    fn get_style_with_fallback(&self, key: &str, fallback_key: &str) -> stylesheet::Value {
+        let result = self.ask_style(key);
+        if let Ok(Some(applied_style)) = result {
+            return applied_style.value.value.clone();
+        }
+
+        let result = self.ask_style(fallback_key);
+        if let Ok(Some(applied_style)) = result {
+            return applied_style.value.value.clone();
+        }
+
+        stylesheet::Value::None
+    }
+
     // convenient helper function for ask_style.
     // if the `key` is not found, try the `fallback_key`
     // if both are not found or there was an error, use the default value
-    // also, it doesn't return the full AppliedStyle as it is implied that you only need the
-    // Value in this case
-    fn get_style(
+    fn get_style_super_safe(
         &self,
         key: &str,
         fallback_key: &str,
